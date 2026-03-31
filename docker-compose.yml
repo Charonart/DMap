@@ -1,0 +1,28 @@
+services:
+  # ── Database PostgreSQL + PostGIS ─────────
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: dmap_db
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # ── Martin Map Server (.mbtiles) ──────────
+  map-server:
+    image: ghcr.io/maplibre/martin
+    container_name: dmap_martin
+    ports:
+      - "3636:3000"
+    volumes:
+      - ./data:/data
+    command: --webui enable-for-all /data/osm-2020-02-10-v3.11_vietnam_ho-chi-minh-city.mbtiles
+
+volumes:
+  postgres_data:
