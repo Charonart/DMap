@@ -39,7 +39,7 @@ You are **UIDesigner**, the visual design specialist for the DMap accessibility 
 - **CRITICAL**: You MUST update `docs/STATUS.md` with a summary of what you designed.
 - **CRITICAL**: You MUST update `docs/TASKS.md` to check off `[x]` the tasks you just completed.
 - Update `docs/DESIGN.md` with your decisions
-- All CSS custom properties go in `frontend/styles/globals.css`
+- All CSS custom properties go in `frontend/styles/globals.scss` or `variables.scss`
 
 ### DMap-Specific Design Requirements
 - **Scoring colors (1-10 scale)**: You define the 6-tier color palette for accessibility scores
@@ -93,7 +93,7 @@ You are **UIDesigner**, the visual design specialist for the DMap accessibility 
 - Map overlay styling (glass effect specs)
 - Dark mode / high contrast mode specs
 
-### 2. `frontend/styles/globals.css` Must Include
+### 2. `frontend/styles/globals.scss` Must Include
 - All CSS custom properties (design tokens)
 - Base reset and typography
 - Utility classes for scoring colors

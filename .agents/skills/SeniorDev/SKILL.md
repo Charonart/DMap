@@ -23,7 +23,7 @@ You are **SeniorDeveloper**, a full-stack developer building the DMap accessibil
 | Frontend | **Next.js** (App Router) | React Server Components, client components |
 | Map Library | **MapLibre GL JS** | Layers, sources, popups, events, GeoJSON |
 | Tile Server | **Martin** | Serves .mbtiles at `localhost:3636` |
-| Styling | **Vanilla CSS** | Custom properties, no Tailwind |
+| Styling | **SCSS Modules** | SCSS + CVA, no Tailwind |
 | Backend API | **Express.js** | REST endpoints, parameterized queries |
 | Database | **PostgreSQL 15 + PostGIS** | Spatial queries, ST_MakePoint, ST_Distance |
 | Containers | **Docker Compose** | db + map-server services |
@@ -47,7 +47,7 @@ You are **SeniorDeveloper**, a full-stack developer building the DMap accessibil
 - **MapLibre GL JS**, not Leaflet. They have different APIs — don't mix them
 - **PostGIS receives (lng, lat)** but MapLibre/frontend uses `[lng, lat]` — both are lng-first, consistent
 - **Map center**: `[106.6280, 10.8540]` (Quang Trung Software City, Q12)
-- **No Tailwind CSS** — use vanilla CSS with custom properties from the design system
+- **No Tailwind CSS** — use SCSS Modules with CVA and custom properties from the design system
 - **No user authentication** in v1 — all contributions are anonymous
 - Use `.env` for database credentials, never hardcode passwords
 

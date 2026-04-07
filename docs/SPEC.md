@@ -1,155 +1,114 @@
-# DMap — Project Specification
+# DMap — Project Specification (Phase 3 Rewrite)
 
 > Community-driven accessibility map for disabled people in Ho Chi Minh City, Vietnam.
 > Inspired by [wheelmap.org](https://wheelmap.org) with a more granular 1-10 scoring system.
+> **V3 Architecture**: Next.js App Router, SCSS (Sass), MapLibre GL JS, Zustand.
 
 ---
 
 ## 1. Product Vision
 
 DMap helps wheelchair users, visually impaired people, and others with disabilities find and rate accessible places in their city. Users can:
-- Browse a map showing accessibility-scored locations
-- Filter places by disability type and accessibility features
-- Add new places and rate their accessibility (1-10)
-- Read and write community reviews
+- Browse a high-performance WebGL map showing accessibility-scored locations.
+- Filter places by disability type, category, and minimum score.
+- Create an account to Add, Rate, Bookmark, and Report reviews.
+- Business owners can Claim POIs to become verified managers.
 
 ## 2. Core Features
 
 ### 2.1 Map View (Home Page)
-- Full-screen interactive map centered on Ho Chi Minh City
-- Map tiles served from OpenFreeMap / local .mbtiles via Martin
-- POI markers color-coded by accessibility score (1-10)
-- Click marker → show POI popup with name, score, category
-- Click "View Details" → open side panel
+- Full-screen interactive map centered on Ho Chi Minh City (`[106.6280, 10.8540]`).
+- Map tiles served from local `.mbtiles` via Martin Tile Server.
+- POI markers (WebGL Symbols) color-coded by accessibility score (1-10).
+- Floating Search Bar containing a **Hamburger/Menu button** that opens a left sidebar for advanced filters.
+- Collision Detection ensures markers scale smoothly without overlapping.
+- **Interaction**: Clicking a POI uses `flyTo()` to center the marker, and instantly slides out the POI Detail Panel.
+- **Accessibility FAB**: A rounded Floating Action Button near the bottom-right corner provides quick access to High Contrast and Font Resizing toggles.
 
 ### 2.2 Accessibility Scoring (1-10 Scale)
 This is the **key differentiator** from wheelmap.org's simple 3-color system.
 
-| Score | Label | Color | Meaning |
-|-------|-------|-------|---------|
-| 9-10 | Excellent | *TBD — UI Agent* | Fully accessible, exceeds requirements |
-| 7-8 | Good | *TBD — UI Agent* | Accessible with minor limitations |
-| 5-6 | Fair | *TBD — UI Agent* | Partially accessible, some barriers |
-| 3-4 | Poor | *TBD — UI Agent* | Significant barriers |
-| 1-2 | Inaccessible | *TBD — UI Agent* | Not accessible |
-| 0 | Unrated | *TBD — UI Agent* | Not yet rated |
-
-> **Note**: Exact color palette will be defined in `docs/DESIGN.md` by the UI Agent.
+- **9-10 (Tuyệt vời)**: Fully accessible, exceeds requirements.
+- **7-8 (Tốt)**: Accessible with minor limitations.
+- **5-6 (Trung bình)**: Partially accessible, some barriers.
+- **3-4 (Kém)**: Significant barriers.
+- **1-2 (Không thể tiếp cận)**: Not accessible.
+- **0 (Chưa đánh giá)**: Not yet rated.
 
 The overall score is computed from individual feature ratings per disability group:
-- **Mobility** (♿): ramps, elevators, wide doors, accessible WC, flat surfaces
-- **Visual** (👁️): braille signs, audio signals, tactile paving, high-contrast signs
-- **Hearing** (👂): sign language staff, visual alarms, hearing loops
-- **Cognitive** (🧠): simple signage, quiet spaces
+- **Mobility** (♿): ramps, elevators, wide doors, accessible WC.
+- **Visual** (👁️): braille signs, audio signals, tactile paving.
+- **Hearing** (👂): sign language staff, visual alarms.
+- **Cognitive** (🧠): simple signage, quiet spaces.
 
-### 2.3 POI Detail Panel
-- Slide-in panel from right side (bottom sheet on mobile)
-- Shows: name, address, overall score, category, description
-- Accessibility breakdown: score per disability group
-- Individual feature ratings with notes
-- Community reviews list
-- "Get Directions" button (opens Google Maps)
+### 2.3 POI Detail Panel (Bottom Sheet / Sidebar)
+- Slide-in M3 panel showing Name, Address, Overall Score, Photos, and Category.
+- Accessibility breakdown: score per disability group and individual features.
+- Community reviews list with photos and Helpful/Not Helpful reaction voting.
+- Action Buttons: "Đánh giá" (Review), "Lưu" (Bookmark), "Báo Cáo" (Report), "Tìm Đường".
 
-### 2.4 Add/Rate a Place
-- Click "Add Place" → click on map to set location
-- Fill form: name, address, category
-- Rate each accessibility feature (1-10 slider + optional note)
-- Submit → saves to database
+### 2.4 User Accounts & Authentication
+- Secure JWT Auth via `HttpOnly` Cookies.
+- View Contributions, Trust Score, and Saved Bookmarks.
+- Only logged-in users can rate places or upload photos (Cloudinary integration).
 
-### 2.5 Search & Filters
-- Search by place name or address
-- Filter by category (restaurant, hospital, park, etc.)
-- Filter by accessibility feature group (mobility, visual, hearing, cognitive)
-- Filter by minimum score
+### 2.5 Filters & Search
+- Full-text autocomplete search by name or address.
+- M3 Filter Chips: Category (restaurant, hospital), Disability Type.
+- Minimum Score Slider (0-10).
 
-### 2.6 Accessibility Toolbar
-- Font size increase/decrease
-- High contrast toggle
-- Screen reader support (semantic HTML, ARIA labels)
+### 2.6 Claiming & Admin Moderation
+- Users can flag/report abusive POIs or Reviews.
+- Businesses can submit a Claim Request to gain ownership of a POI.
+- Admins can rollback malicious edits via Edit History API.
 
-## 3. Technical Stack
+---
+
+## 3. Technical Stack (V3 FE Update)
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | **Next.js** (React, App Router) |
-| Map | **MapLibre GL JS** |
-| Tile Server | **Martin** (serves .mbtiles) |
-| Styling | **Vanilla CSS** (custom design system) |
-| Backend API | **Express.js** (Node.js) |
-| Database | **PostgreSQL 15 + PostGIS** |
-| Containerization | **Docker Compose** |
-| Font | *TBD — UI Agent* (will be defined in `docs/DESIGN.md`) |
+| **Frontend Framework** | **Next.js 16+** (App Router, **TypeScript**) |
+| **Map Engine** | **MapLibre GL JS** (Native Symbol Layers for rendering) |
+| **Styling & UI** | **SCSS (Sass)** + **CVA/clsx** for scalable UI Components |
+| **State Management** | **Zustand** (Strictly for Map/Filter state to prevent deep re-renders) |
+| **Data Fetching** | **TanStack React Query v5** paired with **Axios** (Configured with `withCredentials`) |
+| Backend API | Express.js (Node.js) — *V2 Already Built* |
+| Database | PostgreSQL 15 + PostGIS — *V2 Already Built* |
 
-### API Endpoints
+### Key API Integration Specs
+The backend provides 51 endpoints organized as follows. All responses follow `{ status, data, message }` structure.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/categories` | List all categories |
-| GET | `/api/accessibility-features` | List features (filter by group) |
-| GET | `/api/pois` | List POIs (filter: category, bbox, features, min_score) |
-| GET | `/api/pois/nearby` | Find POIs near coordinates |
-| GET | `/api/pois/:id` | POI detail with features + reviews |
-| GET | `/api/pois.geojson` | All POIs as GeoJSON FeatureCollection |
-| POST | `/api/pois` | Create new POI |
-| PUT | `/api/pois/:id` | Update POI |
-| DELETE | `/api/pois/:id` | Delete POI |
-| POST | `/api/pois/:id/reviews` | Add review |
-| GET | `/api/pois/:id/reviews` | List reviews for POI |
+**Auth**: `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/me`, `POST /api/auth/logout`.  
+**POIs**: `GET /api/pois.geojson` (Bounding Box search), `GET /api/pois/:id`, `POST /api/pois`, `PUT /api/pois/:id`, `DELETE /api/pois/:id`.  
+**Reviews & Reactions**: `GET/POST /api/pois/:id/reviews`, `POST /api/pois/:id/reviews/:review_id/helpful`.  
+**Photos**: `POST /api/pois/:id/photos` (Multipart form to Cloudinary).  
+**Bookmarks**: `GET /api/users/me/bookmarks`, `POST /api/pois/:id/save`.  
+**Search**: `GET /api/search/autocomplete?q=...`.  
+**Claims**: `POST /api/pois/:id/claim`.  
+**Reports**: `POST /api/reviews/:review_id/report`, `POST /api/pois/:id/flag`.  
+**Admin**: `GET /api/admin/reports`, `GET /api/admin/claims`, `POST /api/admin/rollback`.
 
-### Database Schema
+---
 
-- `categories` — POI categories with Vietnamese names and icons
-- `accessibility_features` — Feature definitions grouped by disability type
-- `pois` — Places with PostGIS geometry, overall score
-- `poi_accessibility` — N:N junction: POI ↔ Feature with 1-10 ratings
-- `user_reviews` — Community reviews with 1-10 rating
+## 4. Frontend Project Structure (Target)
 
-## 4. Project Structure
-
-```
-DMap/
-├── docs/                   # All specs, designs, and agent rules
-│   ├── SPEC.md             # This file — project specification
-│   ├── DESIGN.md           # Design system (colors, typography, components)
-│   └── AGENT_RULES.md      # Multi-agent communication protocol
-├── frontend/               # Next.js application
-│   ├── app/                # App Router pages
-│   ├── components/         # React components
-│   └── styles/             # CSS files
-├── backend/                # Express.js API
-│   └── server.js
-├── data/                   # Database init + map tiles
-│   ├── init.sql
-│   └── *.mbtiles
-├── docker-compose.yml
-└── .agents/                # Agent skill definitions
+DMap/frontend/
+├── app/                  # Next.js App Router Setup
+│   ├── (map)/            # Main map layout (Full Screen)
+│   ├── (auth)/           # Login/Register Pages
+│   └── globals.scss      # SCSS entry point + CSS Variables
+├── components/
+│   ├── map/              # MapCore.jsx, MapWrapper.jsx
+│   ├── ui/               # Reusable SCSS Modules + CVA buttons, chips
+│   └── panels/           # POIDetailPanel.jsx, FilterPanel.jsx
+├── hooks/                # useMapStore.js (Zustand), useGeolocation.js
+├── lib/                  # axios.js (axios instance), utils.js (CVA merge)
+└── styles/               # Global SCSS mixins and functions
 ```
 
-## 5. Target Scope (MVP)
-
-### In Scope
-- [x] Map displaying POIs from PostGIS
-- [x] Color-coded markers (1-10 score)
-- [x] POI detail panel
-- [x] Add new POI form
-- [x] Rate accessibility features
-- [x] Community reviews
-- [x] Search and filter
-- [x] Accessibility toolbar
-- [x] Mobile responsive
-
-### Out of Scope (v1)
-- User authentication / accounts
-- Admin panel
-- Photo uploads
-- Real-time elevator/escalator status
-- Multi-language (Vietnamese only for v1)
-- PWA / offline mode
-
-## 6. Geographic Focus
-
-- **City**: Ho Chi Minh City, Vietnam
-- **Map Center**: `[106.6280, 10.8540]` (Công Viên Phần Mềm Quang Trung, Quận 12)
-- **Default Zoom**: 14
-- **Tile Source**: Local .mbtiles via Martin at `localhost:3636`
+## 5. Implementation Constraints (The "Do It Right" Rule)
+1. **SCSS Architecture**: All colors and padding MUST be defined in standard SCSS or SCSS Modules. Tailwind is entirely forbidden.
+2. **Never store Map Instance in React Context**: Use `useRef` to store the map canvas to completely prevent React re-renders from destroying MapLibre state. Use `Zustand` to orchestrate interactions.
+3. **Handle API Auth Errors Globally**: Let the Axios interceptor catch `401 Unauthorized` and trigger the Login Modal, rather than manually checking auth on every click.
+4. **Collision Detection on Map**: Let MapLibre's `icon-allow-overlap: false` handle the scaling of pins when thousands of markers load in an area. Do not use React to hide/show pins dynamically based on zoom.

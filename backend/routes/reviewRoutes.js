@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const reviewController = require('../controllers/reviewController');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { validateReview } = require('../middleware/validators');
 
-router.get('/', reviewController.getReviews);
+router.get('/', optionalAuth, reviewController.getReviews);
 // Fix #18: Added validateReview middleware
 router.post('/', requireAuth, reviewController.uploadReviewImage, validateReview, reviewController.addReview);
 router.put('/:review_id', requireAuth, reviewController.updateReview);

@@ -23,16 +23,18 @@ exports.getReviews = async (req, res) => {
     // Fix #19: Select specific columns, exclude user_id
     // Module 2: Sort by helpful_count first so most useful reviews appear on top
     const poiId = parseInt(req.params.id);
+    const userId = req.user ? req.user.id : null;
     const { rows } = await pool.query(`
       SELECT ur.id, ur.poi_id, ur.reviewer_name, ur.rating, ur.comment,
              ur.disability_type, ur.visited_at, ur.created_at,
              ur.helpful_count,
-             p.image_url 
+             p.image_url,
+             EXISTS(SELECT 1 FROM review_reactions rr WHERE rr.review_id = ur.id AND rr.user_id = $2) as has_voted
       FROM user_reviews ur
       LEFT JOIN poi_photos p ON ur.id = p.review_id
       WHERE ur.poi_id = $1 
       ORDER BY ur.helpful_count DESC, ur.created_at DESC
-    `, [poiId]);
+    `, [poiId, userId]);
     res.json({ status: 'success', data: rows });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });

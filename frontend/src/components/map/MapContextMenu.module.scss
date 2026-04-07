@@ -1,0 +1,76 @@
+@use '@/styles/variables' as *;
+
+// The floating context menu popup
+.menu {
+  position: absolute;
+  z-index: 60;
+  background-color: $color-surface-container-lowest;
+  box-shadow: $shadow-m3-lg;
+  border-radius: $radius-xl;
+  padding: $space-2 0;
+  min-width: 220px;
+  overflow: hidden;
+
+  // Simple scale-up entrance
+  animation: menuIn 0.12s ease-out;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Coordinate header
+.coordHeader {
+  padding: $space-2 $space-4;
+  border-bottom: 1px solid rgba($color-outline, 0.08);
+  margin-bottom: $space-1;
+}
+
+.coordLabel {
+  font-size: 0.8125rem;
+  color: $color-on-surface-variant;
+  font-weight: 500;
+}
+
+.coordValue {
+  font-family: $font-mono;
+  color: $color-on-surface;
+  margin-top: $space-1;
+  user-select: all;
+}
+
+// Action buttons
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  width: 100%;
+  padding: $space-2 $space-4;
+  border: none;
+  background: none;
+  text-align: left;
+  color: $color-on-surface;
+  cursor: pointer;
+  transition: background-color 0.12s;
+  font-weight: 500;
+
+  &:hover {
+    background-color: $color-surface-container-high;
+    color: $color-primary;
+  }
+
+  &.danger {
+    color: $color-error;
+
+    &:hover {
+      background-color: $color-error-container;
+    }
+  }
+}

@@ -133,9 +133,10 @@ exports.getFlaggedPois = async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT p.id, p.name, p.flag_count, p.is_hidden, 
-             json_agg(json_build_object('reason', pf.reason, 'user_id', pf.user_id)) AS flags
+             json_agg(json_build_object('reason', pf.reason, 'user_id', pf.user_id, 'username', u.username)) AS flags
       FROM pois p
       JOIN poi_flags pf ON p.id = pf.poi_id
+      LEFT JOIN users u ON pf.user_id = u.id
       WHERE p.deleted_at IS NULL
       GROUP BY p.id, p.name, p.flag_count, p.is_hidden
       ORDER BY p.flag_count DESC

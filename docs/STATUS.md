@@ -477,3 +477,39 @@
 - Frontend rebuild có thể bắt đầu.
 
 **Blockers**: None
+
+## 2026-04-01 � Senior Project Manager (V3 Frontend Overhaul)
+
+**What I did**:
+- ?? **Closing V1 Frontend Era**: Ch�nh th?c d�ng l?i k? nguy�n thi?t k? Vanilla CSS cu. To�n b? thi?t k? v� code c?a V1 d� du?c thay th?.
+- ?? **V3 Documentation Rewrite**: �� vi?t l?i to�n b? `docs/DESIGN.md` v� `docs/SPEC.md` d? �p d?t thi?t k? **Tailwind CSS**, t�ch h?p **MapLibre GL JS**, **Zustand** v� 51 endpoints M?I (Auth, Bookmarks, Reports, Claims) v�o Scope Frontend chu?n. Gi?i quy?t d?t di?m c�c conflict v? Design System M3.
+- ? **Kh?i t?o Task List M?i**: T?o file checklist `docs/TASKS_FE_V3.md` cho c�c Developer Frontend x�y d?ng l?i Next.js App t? d?u th�nh t?ng ticket nh? 30-60 ph�t.
+- ?? **User Status**: User d� t?o thu m?c Next.js (Tailwind) t?i `frontend/frontend`.
+
+**Files changed**: `docs/DESIGN.md`, `docs/SPEC.md`, `docs/TASKS_FE_V3.md` (new)
+
+**What's next**:
+- M?i **Senior Developer** v�o kh?i d?ng **Task T_FE_1** (`tailwind.config.ts` setup) trong thu m?c `frontend/frontend` m?i tinh d?a theo `docs/TASKS_FE_V3.md`.
+- Tuy nhi�n do User y�u c?u "t? t?", Project Manager s? t?m ngung v� d?i l?nh kh?i d?ng Phase 3 (Core UI & Infrastructure Code).
+
+**Blockers**: None.
+
+
+
+## 2026-04-01 — Senior Project Manager (V3 Frontend Overhaul)
+
+**What I did**:
+- 🛑 **Closing V1 Frontend Era**: Chính thức đóng lại kỷ nguyên thiết kế Vanilla CSS cũ.
+- 🎯 **V3 Documentation Rewrite**: Đã viết lại toàn bộ docs/DESIGN.md và docs/SPEC.md để áp đặt thiết kế **Tailwind CSS**, tích hợp **MapLibre GL JS**, **Zustand** và 51 endpoints MỚI (Auth, Bookmarks, Reports, Claims). Giải quyết dứt điểm các conflict về Design System M3.
+- ✅ **Khởi tạo Task List Mới**: Tạo file checklist docs/TASKS_FE_V3.md cho các Developer Frontend xây dựng lại Next.js App từ đầu thành từng ticket nhỏ 30-60 phút.
+- 🧱 **User Status**: User đã tự tạo thư mục Next.js (Tailwind) tại frontend/frontend.
+
+**Files changed**: docs/DESIGN.md, docs/SPEC.md, docs/TASKS_FE_V3.md (new)
+
+**What\'s next**:
+- Mời **Senior Developer** vào khởi động **Task T_FE_1** (tailwind.config setup) trong thư mục frontend/frontend mới tinh dựa theo docs/TASKS_FE_V3.md.
+- Tuy nhiên do User yêu cầu 'từ từ', Project Manager sẽ tạm ngưng và đợi lệnh bàn giao từ User để khởi động Phase 3 (Core UI & Infrastructure Code).
+
+**Blockers**: None.
+# # #   P h a s e   5   U p d a t e s   ( D a t e :   2 0 2 6 - 0 4 - 0 6 ) \ n -   I m p l e m e n t e d   P O I   G e o j s o n   A P I   t o   a c c e p t   a r r a y   o f   a c c e s s i b i l i t y   f e a t u r e s . \ n -   C o n n e c t e d   U I   F i l t e r   s t a t e s   t o   Z u s t a n d   u s e M a p S t o r e   f o r   l i v e   m a p   r e l o a d . \ n -   B u i l t   C r e a t e   P O I   F o r m   B o t t o m   S h e e t   t r i g g e r e d   b y   C o n t e x t   M e n u   ( D r o p   P i n ) . \ n -   V a l i d a t e d   a u t h e n t i c a t i o n   s t a t e   b e f o r e   i n s e r t i n g   P O I . \ n -   N e x t :   I m p l e m e n t   R e v i e w   M o d a l   a n d   B o o k m a r k   f u n c t i o n a l i t i e s .  
+ 

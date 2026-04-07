@@ -63,11 +63,10 @@ Append to `docs/STATUS.md`:
 
 | Item | Convention | Example |
 |------|-----------|---------|
-| Components | PascalCase | `POIDetailPanel.jsx` |
-| CSS files | kebab-case | `poi-detail-panel.css` |
+| Components | PascalCase | `POIDetailPanel.tsx` |
+| Utilities/Hooks | camelCase | `useMapStore.ts`, `utils.ts` |
 | API routes | kebab-case | `/api/accessibility-features` |
 | DB tables | snake_case | `poi_accessibility` |
-| CSS variables | kebab-case | `--color-score-good` |
 
 ## 8. Rating System (ALL Agents Must Agree)
 
@@ -75,4 +74,15 @@ Append to `docs/STATUS.md`:
 - DB: `SMALLINT CHECK (rating >= 1 AND rating <= 10)`
 - API: `overall_score` as 0-10 (0 = unrated)
 - Frontend: score with color from 6-tier scale
-- Design: exact hex colors from `DESIGN.md`
+- Design: exact hex colors mapped to Tailwind variables.
+
+## 9. V3 Frontend Architecture Constraints (MANDATORY)
+
+The frontend has been completely rewritten to V3. ALL Agents MUST build features strictly inside the `frontend/` directory using these specific tools. DO NOT drift from this stack:
+
+1. **Framework**: Next.js 16+ (App Router).
+2. **Styling**: **Tailwind CSS v4** EXCLUSIVELY. Do NOT use Vanilla CSS. Do NOT use `module.css` files.
+3. **Component Structure**: Use `cva` (Class Variance Authority) combined with `tailwind-merge` for UI components (e.g., `<Button variant="primary">`) to group Tailwind classes.
+4. **Data Fetching**: Use **TanStack React Query v5** to call Axios APIs. Do NOT manually manage `loading/error` states with `useEffect`.
+5. **Map State**: Use **Zustand** (`useMapStore.ts`) for all map-related states (Bounding box, zoom level, active POIs) to avoid React re-renders crushing the MapLibre Canvas.
+6. **Typing**: Use **TypeScript** (`.ts`, `.tsx`). Provide `interface` for API payloads.
