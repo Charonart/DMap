@@ -62,3 +62,25 @@ $space-12: 3rem;
 // Fonts
 $font-sans: var(--font-inter), sans-serif;
 $font-mono: var(--font-roboto-mono), monospace;
+
+// Z-Index Layer Management
+$z-layers: (
+  "map": 0,
+  "map-controls": 10,
+  "sheet": 100,
+  "sticky": 200,
+  "header": 10,
+  "modal-backdrop": 1000,
+  "modal": 1010,
+  "tooltip": 1200,
+  "toast": 1500
+);
+
+@function z-index($layer) {
+  @if map-has-key($z-layers, $layer) {
+    @return map-get($z-layers, $layer);
+  } @else {
+    @warn "No layer found for `#{$layer}` in $z-layers map.";
+    @return null;
+  }
+}

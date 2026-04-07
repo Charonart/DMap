@@ -61,7 +61,7 @@
   background-color: $color-surface-container-lowest;
   border-radius: $radius-xl;
   box-shadow: $shadow-m3-lg;
-  z-index: 50;
+  z-index: 100;
   overflow: hidden;
 
   animation: dropIn 0.15s ease-out;

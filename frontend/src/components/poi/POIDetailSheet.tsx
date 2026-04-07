@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '@/lib/axios';
 import { useMapStore } from '@/hooks/useMapStore';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/Sheet';
+import { Sheet, SheetContent } from '@/components/ui/Sheet';
 import { POIHeaderInfo } from './POIHeaderInfo';
 import { POIPerformanceBreakdown } from './POIPerformanceBreakdown';
 import { POIActionRow } from './POIActionRow';
@@ -40,12 +40,8 @@ export function POIDetailSheet() {
   }, [map, poiData]);
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && setSelectedPoiId(null)}>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && setSelectedPoiId(null)} modal={false}>
       <SheetContent side="detailPanel" padding="none">
-        <SheetHeader className="sr-only">
-          <SheetTitle>Chi tiết địa điểm</SheetTitle>
-          <SheetDescription>Thông tin tổng quan và bình luận về địa điểm.</SheetDescription>
-        </SheetHeader>
         
         {isLoading ? (
           <div className={styles.loadingContainer}>

@@ -20,10 +20,10 @@ export function AdminSidebar() {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.sidebarHeader}>
-        <div style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.5rem', borderRadius: '0.75rem', display: 'flex' }}>
-          <MapPin className="w-6 h-6" />
+        <div style={{ padding: '0.25rem', borderRadius: '0.75rem', display: 'flex', width: '2.5rem', height: '2.5rem', overflow: 'hidden' }}>
+          <img src="/logo.png" alt="DMap Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
-        DMap Admin
+        <span style={{ fontWeight: 700, fontSize: '1.25rem' }}>DMap Admin</span>
       </div>
 
       <nav className={styles.sidebarNav}>

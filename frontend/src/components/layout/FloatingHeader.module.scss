@@ -1,5 +1,30 @@
 @use '@/styles/variables' as *;
 
+.logoSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background-color: $color-surface-container-lowest;
+  border-radius: $radius-full;
+  box-shadow: $shadow-m3-md;
+  overflow: hidden;
+  padding: $space-1;
+  flex-shrink: 0;
+
+  @media (min-width: 640px) {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
 // The hamburger / menu button on the far left
 .menuBtn {
   pointer-events: auto;

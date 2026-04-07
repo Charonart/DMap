@@ -17,6 +17,24 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "DMap - Accessibility Map",
   description: "Community-driven accessibility map for disabled people in Vietnam.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "DMap",
+  },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
+};
+
+export const viewport: import("next").Viewport = {
+  themeColor: "#0b57d0",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

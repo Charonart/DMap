@@ -10,7 +10,7 @@ import { useMapStore } from '@/hooks/useMapStore';
 import { useMapContext } from '@/components/map/MapContext';
 
 // Clean UI Primitives
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/Sheet';
+import { Sheet, SheetContent } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
 import { Input, NativeSelect } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -147,17 +147,17 @@ export function CreatePOISheet() {
       <SheetContent side="floatingBottom" padding="none">
         
         <div className={styles.headerSticky}>
-          <SheetHeader>
-            <SheetTitle className={styles.titleWrapper}>
+          <div className={styles.customHeader}>
+            <div className={styles.titleWrapper}>
               <MapPin className="w-5 h-5 text-primary" />
               Tạo Địa Điểm Trợ Năng Mới
-            </SheetTitle>
+            </div>
             {newPoiCoords && (
               <p className={styles.coords}>
                 Tọa độ: {newPoiCoords[1].toFixed(5)}, {newPoiCoords[0].toFixed(5)}
               </p>
             )}
-          </SheetHeader>
+          </div>
         </div>
 
         <div className={cn(styles.contentBody, "no-scrollbar")}>

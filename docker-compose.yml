@@ -15,14 +15,14 @@ services:
       - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   # ── Martin Map Server (.mbtiles) ──────────
-  map-server:
-    image: ghcr.io/maplibre/martin
-    container_name: dmap_martin
-    ports:
-      - "3636:3000"
-    volumes:
-      - ./data:/data
-    command: --webui enable-for-all /data/osm-2020-02-10-v3.11_vietnam_ho-chi-minh-city.mbtiles
+  # map-server:
+  #   image: ghcr.io/maplibre/martin
+  #   container_name: dmap_martin
+  #   ports:
+  #     - "3636:3000"
+  #   volumes:
+  #     - ./data:/data
+  #   command: --webui enable-for-all /data/osm-2020-02-10-v3.11_vietnam_ho-chi-minh-city.mbtiles
 
 volumes:
   postgres_data:

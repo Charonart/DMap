@@ -221,7 +221,7 @@ exports.getPoiById = async (req, res) => {
         p.category_id, c.name AS category_name, c.name_vi AS category_name_vi, c.icon AS category_icon,
         p.phone, p.website, p.opening_hours,
         p.overall_score, p.is_verified, p.status,
-        p.user_id, p.created_at, p.updated_at
+        p.user_id, p.owner_user_id, p.created_at, p.updated_at
       FROM pois p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.id = $1 AND p.deleted_at IS NULL
@@ -264,7 +264,7 @@ exports.getPoiById = async (req, res) => {
 
     const user = req.user;
     const poiData = poiResult.rows[0];
-    const isOwner = user && String(user.id) === String(poiData.user_id);
+    const isOwner = user && (String(user.id) === String(poiData.user_id) || String(user.id) === String(poiData.owner_user_id));
     const isAdmin =
       user && (user.role === "admin" || user.role === "moderator");
 
@@ -399,6 +399,7 @@ exports.updatePoi = async (req, res) => {
 
     if (
       String(oldPoi.user_id) !== String(req.user.id) &&
+      String(oldPoi.owner_user_id) !== String(req.user.id) &&
       req.user.role !== "admin" &&
       req.user.role !== "moderator"
     ) {
@@ -489,6 +490,7 @@ exports.deletePoi = async (req, res) => {
 
     if (
       String(oldPoi.user_id) !== String(req.user.id) &&
+      String(oldPoi.owner_user_id) !== String(req.user.id) &&
       req.user.role !== "admin" &&
       req.user.role !== "moderator"
     ) {

@@ -15,7 +15,7 @@
 .overlayRoot {
   position: absolute;
   inset: 0;
-  z-index: 40;
+  z-index: z-index("modal");
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 250, 248, 0.95); // default surface with 95% opacity
@@ -45,6 +45,10 @@
   overflow-y: auto;
   padding: $space-4;
   
+  @media (min-width: 640px) {
+    padding: $space-6;
+  }
+
   @media (min-width: 768px) {
     padding: $space-8;
   }
@@ -65,10 +69,22 @@
   box-shadow: $shadow-m3-md;
   overflow: hidden;
   border: 1px solid rgba(116, 119, 117, 0.1);
+
+  @media (max-width: 639px) {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+    background-color: transparent;
+  }
 }
 
 .tabsContainer {
   padding: 0 $space-6 $space-6 $space-6;
+
+  @media (max-width: 639px) {
+    padding: 0 0 $space-4 0;
+  }
 }
 
 .tabsList {

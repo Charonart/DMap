@@ -1,0 +1,81 @@
+@use '@/styles/variables' as *;
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $color-on-surface;
+  margin-bottom: $space-1;
+
+  @media (max-width: 639px) {
+    font-size: 1rem;
+  }
+}
+
+.divider {
+  padding-top: $space-6;
+  border-top: 1px solid rgba(116, 119, 117, 0.08);
+}
+
+.itemCard {
+  padding: $space-4;
+  cursor: pointer;
+  transition: transform 0.1s;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $space-2;
+}
+
+.itemTitle {
+  font-weight: 700;
+  color: $color-on-surface;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.itemDate {
+  font-size: 0.8125rem;
+  color: $color-on-surface-variant;
+}
+
+.itemComment {
+  color: $color-on-surface-variant;
+  line-height: 1.5;
+  font-size: 0.875rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.poiStatus {
+  padding: 0.25rem $space-2;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
+  margin-left: $space-2;
+}

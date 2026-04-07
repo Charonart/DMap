@@ -79,28 +79,35 @@ export function POIPerformanceBreakdown({ features }: { features: Feature[] }) {
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                     {g.features.map((feat) => (
-                      <div key={feat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{
-                          width: '1.25rem', height: '1.25rem', borderRadius: '50%', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.625rem', fontWeight: 700,
-                          backgroundColor: feat.is_available ? 'rgba(46,125,50,0.15)' : 'rgba(116,119,117,0.1)',
-                          color: feat.is_available ? 'var(--color-score-good)' : 'var(--color-outline)',
-                        }}>
-                          {feat.is_available ? '✓' : '✗'}
-                        </span>
-                        <span style={{ flex: 1, fontSize: '0.8125rem', color: feat.is_available ? 'var(--color-on-surface)' : 'var(--color-outline)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {feat.name_vi || feat.name}
-                        </span>
-                        {feat.is_available && feat.quality_rating > 0 && (
-                          <>
-                            <div style={{ width: '3rem', flexShrink: 0 }}>
-                              <ScoreBar score={feat.quality_rating} />
-                            </div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-on-surface-variant)', width: '1.25rem', textAlign: 'right', flexShrink: 0 }}>
-                              {feat.quality_rating}
-                            </span>
-                          </>
+                      <div key={feat.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{
+                            width: '1.25rem', height: '1.25rem', borderRadius: '50%', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.625rem', fontWeight: 700,
+                            backgroundColor: feat.is_available ? 'rgba(46,125,50,0.15)' : 'rgba(116,119,117,0.1)',
+                            color: feat.is_available ? 'var(--color-score-good)' : 'var(--color-outline)',
+                          }}>
+                            {feat.is_available ? '✓' : '✗'}
+                          </span>
+                          <span style={{ flex: 1, fontSize: '0.8125rem', color: feat.is_available ? 'var(--color-on-surface)' : 'var(--color-outline)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {feat.name_vi || feat.name}
+                          </span>
+                          {feat.is_available && feat.quality_rating > 0 && (
+                            <>
+                              <div style={{ width: '3rem', flexShrink: 0 }}>
+                                <ScoreBar score={feat.quality_rating} />
+                              </div>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-on-surface-variant)', width: '1.25rem', textAlign: 'right', flexShrink: 0 }}>
+                                {feat.quality_rating}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {feat.is_available && feat.note && (
+                          <div style={{ paddingLeft: '1.75rem', fontSize: '0.75rem', color: 'var(--color-on-surface-variant)', fontStyle: 'italic', marginBottom: '0.25rem' }}>
+                            "{feat.note}"
+                          </div>
                         )}
                       </div>
                     ))}

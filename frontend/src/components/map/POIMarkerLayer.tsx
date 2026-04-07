@@ -84,8 +84,9 @@ export function POIMarkerLayer() {
     // Cleanup markers that are no longer in the geojson
     Object.keys(markersRef.current).forEach((id) => {
       if (!newIds.has(id)) {
-        markersRef.current[id].marker.remove();
-        setTimeout(() => markersRef.current[id].root.unmount(), 0);
+        const { marker, root } = markersRef.current[id];
+        marker.remove();
+        setTimeout(() => root.unmount(), 0);
         delete markersRef.current[id];
       }
     });

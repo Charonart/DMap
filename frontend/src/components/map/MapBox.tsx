@@ -23,7 +23,6 @@ export function MapBox({ children }: { children?: React.ReactNode }) {
       zoom: viewState.zoom,
       pitch: viewState.pitch,
       bearing: viewState.bearing,
-      attributionControl: false, // Turn off default, we can add custom if needed
     });
 
     // Handle map events to sync with Zustand store

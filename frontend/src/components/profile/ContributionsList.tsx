@@ -6,20 +6,22 @@ import { Card } from '@/components/ui/Card';
 import { Star, MapPin } from 'lucide-react';
 import { ScoreBadge } from '@/components/ui/ScoreBadge';
 import { Skeleton } from '@/components/ui/Skeleton';
-import styles from '@/styles/primitives.module.scss';
+import styles from './ContributionsList.module.scss';
+import primStyles from '@/styles/primitives.module.scss';
+import { cn } from '@/lib/utils';
 
 export function ContributionsList() {
   const { data, isLoading } = useQuery({
     queryKey: ['user.contributions'],
     queryFn: async () => {
       const res = await axiosInstance.get('/users/profile/contributions');
-      return res.data.data; // { pois: [...], reviews: [...] }
+      return res.data.data;
     },
   });
 
   if (isLoading) {
     return (
-      <div className={styles.breakdownRoot}>
+      <div className={primStyles.breakdownRoot}>
         <Skeleton style={{ width: '100%', height: '5rem', borderRadius: '0.75rem' }} />
         <Skeleton style={{ width: '100%', height: '5rem', borderRadius: '0.75rem' }} />
         <Skeleton style={{ width: '100%', height: '5rem', borderRadius: '0.75rem' }} />
@@ -32,64 +34,69 @@ export function ContributionsList() {
   const hasNothing = reviews.length === 0 && pois.length === 0;
 
   if (hasNothing) {
-    return <div className={styles.emptyState}>Bạn chưa có đóng góp nào. Hãy đánh giá hoặc thêm địa điểm mới!</div>;
+    return <div className={primStyles.emptyState}>Bạn chưa có đóng góp nào. Hãy đánh giá hoặc thêm địa điểm mới!</div>;
   }
 
   return (
-    <div className={styles.breakdownRoot}>
+    <div className={styles.root}>
       {/* Reviews section */}
       {reviews.length > 0 && (
-        <div>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-on-surface)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <Star className="w-5 h-5" style={{ color: 'var(--color-primary)' }} /> Đánh giá của tôi ({reviews.length})
+        <section className={styles.section}>
+          <h3 className={styles.sectionHeader}>
+            <Star className="w-5 h-5 text-primary" />
+            Đánh giá của tôi ({reviews.length})
           </h3>
-          <div className={styles.reviewList}>
+          <div className={primStyles.reviewList}>
             {reviews.map((review: any) => (
-              <Card key={review.id} style={{ padding: '1rem', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                  <div>
-                    <h4 style={{ fontWeight: 700, color: 'var(--color-on-surface)' }}>POI #{review.poi_id}</h4>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--color-on-surface-variant)' }}>
+              <Card key={review.id} className={styles.itemCard}>
+                <div className={styles.itemHeader}>
+                  <div className="min-w-0">
+                    <h4 className={styles.itemTitle}>POI #{review.poi_id}</h4>
+                    <p className={styles.itemDate}>
                       {new Date(review.created_at).toLocaleDateString('vi-VN')}
                     </p>
                   </div>
                   <ScoreBadge score={review.rating} />
                 </div>
                 {review.comment && (
-                  <p style={{ color: 'var(--color-on-surface-variant)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <p className={styles.itemComment}>
                     {review.comment}
                   </p>
                 )}
               </Card>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* POIs section */}
       {pois.length > 0 && (
-        <div>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-on-surface)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingTop: reviews.length > 0 ? '1.5rem' : 0, borderTop: reviews.length > 0 ? '1px solid rgba(116,119,117,0.08)' : 'none' }}>
-            <MapPin className="w-5 h-5" style={{ color: 'var(--color-tertiary)' }} /> Địa điểm đã thêm ({pois.length})
+        <section className={cn(styles.section, reviews.length > 0 && styles.divider)}>
+          <h3 className={styles.sectionHeader}>
+            <MapPin className="w-5 h-5 text-tertiary" />
+            Địa điểm đã thêm ({pois.length})
           </h3>
-          <div className={styles.reviewList}>
+          <div className={primStyles.reviewList}>
             {pois.map((poi: any) => {
-              const statusLabel = poi.status === 'approved' ? 'Đã duyệt' : poi.status === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt';
+              const statusLabel = poi.status === 'approved' ? 'Đã duyệt' : poi.status === 'rejected' ? 'Bị từ chối' : 'Đang chờ';
               const statusColor = poi.status === 'approved' ? 'var(--color-score-good)' : poi.status === 'rejected' ? 'var(--color-error)' : '#f9a825';
               const statusBg = poi.status === 'approved' ? 'rgba(46,125,50,0.1)' : poi.status === 'rejected' ? 'rgba(186,26,26,0.1)' : 'rgba(249,168,37,0.15)';
 
               return (
-                <Card key={poi.id} style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <h4 style={{ fontWeight: 700, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Card key={poi.id} className={styles.itemCard}>
+                  <div className="flex justify-between items-center w-full">
+                    <div className="min-w-0 flex-1">
+                      <h4 className={cn(styles.itemTitle, "truncate")}>
                         {poi.name_vi || poi.name}
                       </h4>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-on-surface-variant)' }}>
+                      <p className={cn(styles.itemDate, "truncate")}>
                         {poi.address || 'Không rõ địa chỉ'}
                       </p>
                     </div>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: statusBg, color: statusColor, fontSize: '0.75rem', fontWeight: 700, borderRadius: '0.25rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                    <span 
+                      className={styles.poiStatus}
+                      style={{ backgroundColor: statusBg, color: statusColor }}
+                    >
                       {statusLabel}
                     </span>
                   </div>
@@ -97,7 +104,7 @@ export function ContributionsList() {
               );
             })}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

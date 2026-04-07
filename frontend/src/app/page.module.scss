@@ -13,7 +13,7 @@
   top: $space-2;
   left: $space-2;
   right: $space-2;
-  z-index: 20;
+  z-index: z-index("header");
   pointer-events: none;
   display: flex;
   gap: $space-2;

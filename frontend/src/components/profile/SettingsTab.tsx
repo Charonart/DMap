@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FormSection, FormGroup } from '@/components/ui/FormLayout';
 import { User, Lock, Save, Loader2, KeyRound } from 'lucide-react';
-import styles from './ProfileOverlay.module.scss';
+import styles from './SettingsTab.module.scss';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { cn } from '@/lib/utils';
 
 interface SettingsTabProps {
   user: any;
@@ -31,7 +32,7 @@ export function SettingsTab({ user }: SettingsTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user.profile'] });
-      checkAuth(); // refetch auth store
+      checkAuth();
       setNameToast('Đã lưu tên hiển thị thành công!');
       setTimeout(() => setNameToast(''), 3000);
     },
@@ -61,18 +62,18 @@ export function SettingsTab({ user }: SettingsTabProps) {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem 0' }}>
+    <div className={styles.root}>
       
       {/* 1. Update Name */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--color-primary)' }}>
+      <section className={styles.section}>
+        <div className={cn(styles.sectionHeader, styles.primary)}>
           <User className="w-5 h-5" />
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Thông tin cá nhân</h3>
+          <h3>Thông tin cá nhân</h3>
         </div>
         
         <FormSection>
           <FormGroup label="Tên hiển thị">
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className={styles.inputGroup}>
               <Input 
                 value={username}
                 onChange={e => setUsername(e.target.value)}
@@ -82,22 +83,25 @@ export function SettingsTab({ user }: SettingsTabProps) {
                 variant="outline" 
                 onClick={() => nameMutation.mutate()}
                 disabled={nameMutation.isPending || !username.trim() || username === user?.username}
-                style={{ flexShrink: 0 }}
               >
                 {nameMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Lưu
               </Button>
             </div>
           </FormGroup>
-          {nameToast && <p style={{ fontSize: '0.875rem', color: nameToast.includes('thành công') ? 'var(--color-primary)' : 'var(--color-error)' }}>{nameToast}</p>}
+          {nameToast && (
+            <p className={cn(styles.toast, nameToast.includes('thành công') ? styles.success : styles.error)}>
+              {nameToast}
+            </p>
+          )}
         </FormSection>
       </section>
 
       {/* 2. Change Password */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--color-on-surface)' }}>
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
           <KeyRound className="w-5 h-5" />
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Bảo mật</h3>
+          <h3>Bảo mật</h3>
         </div>
 
         <FormSection>
@@ -130,7 +134,11 @@ export function SettingsTab({ user }: SettingsTabProps) {
             {passMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Đổi mật khẩu'}
           </Button>
           
-          {passToast && <p style={{ fontSize: '0.875rem', color: passToast.includes('thành công') ? 'var(--color-primary)' : 'var(--color-error)' }}>{passToast}</p>}
+          {passToast && (
+            <p className={cn(styles.toast, passToast.includes('thành công') ? styles.success : styles.error)}>
+              {passToast}
+            </p>
+          )}
         </FormSection>
       </section>
 

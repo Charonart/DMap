@@ -11,6 +11,12 @@
   border-bottom: 1px solid rgba(116, 119, 117, 0.1);
 }
 
+.customHeader {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
 .titleWrapper {
   display: flex;
   align-items: center;

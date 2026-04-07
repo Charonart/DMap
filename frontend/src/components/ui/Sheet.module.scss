@@ -54,7 +54,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: z-index("modal-backdrop");
   background-color: rgba(0, 0, 0, 0.6);
 
   &[data-state='open'] {
@@ -68,7 +68,7 @@
 
 .base {
   position: fixed;
-  z-index: 50;
+  z-index: z-index("sheet");
   display: flex;
   flex-direction: column;
   background-color: $color-surface-container-lowest;
@@ -184,16 +184,25 @@
   position: absolute;
   right: 1rem;
   top: 1rem;
-  border-radius: $radius-sm;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  background: transparent;
-  border: none;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba($color-surface-container-lowest, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba($color-outline, 0.1);
+  box-shadow: $shadow-m3-sm;
   cursor: pointer;
   color: $color-on-surface;
+  transition: all 0.2s;
+  z-index: 10; /* Ensure on top of images */
 
   &:hover {
-    opacity: 1;
+    background-color: $color-surface-container-lowest;
+    box-shadow: $shadow-m3-md;
+    transform: scale(1.05);
   }
 
   &:focus {
