@@ -1,0 +1,81 @@
+@use '@/styles/variables' as *;
+@use '@/styles/mixins' as *;
+
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-on-surface-variant;
+  
+  &.left {
+    left: $space-3;
+    pointer-events: none;
+  }
+  
+  &.right {
+    right: $space-3;
+    cursor: pointer;
+  }
+  
+  &.chevron {
+    right: $space-4;
+    pointer-events: none;
+    font-size: 0.75rem;
+  }
+}
+
+.inputRoot {
+  display: flex;
+  height: 3rem; // h-12
+  width: 100%;
+  border-radius: $radius-sm;
+  border: 1px solid $color-outline;
+  background-color: $color-surface-container-lowest;
+  padding: 0.5rem 1rem; // px-4 py-2
+  font-size: 1rem; // text-body
+  color: $color-on-surface;
+  transition: all 0.2s;
+
+  &::file-selector-button {
+    border: 0;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  &::placeholder {
+    color: $color-on-surface-variant;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px $color-primary;
+    border-color: transparent;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &.hasLeftIcon {
+    padding-left: 2.5rem; // pl-10
+  }
+
+  &.hasRightIcon {
+    padding-right: 2.5rem; // pr-10
+  }
+}
+
+.selectRoot {
+  @extend .inputRoot;
+  appearance: none;
+}

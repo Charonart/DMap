@@ -1,0 +1,188 @@
+{
+  "info": {
+    "name": "DMap V3 API Collection",
+    "description": "Complete API reference for DMap V3 — 51 endpoints. All responses use { status, data/message } format (except /api/pois.geojson). Auth via httpOnly cookies.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🟢 Health",
+      "item": [
+        { "name": "Health Check", "request": { "method": "GET", "url": "http://localhost:4000/api/health" } }
+      ]
+    },
+    {
+      "name": "🔑 Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/auth/register", "body": { "mode": "raw", "raw": "{\"email\": \"test@dmap.vn\", \"password\": \"123456\", \"username\": \"testuser\"}" } }
+        },
+        {
+          "name": "Login",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/auth/login", "body": { "mode": "raw", "raw": "{\"email\": \"admin@dmap.vn\", \"password\": \"admin123\"}" } }
+        },
+        { "name": "Logout", "request": { "method": "POST", "url": "http://localhost:4000/api/auth/logout" } },
+        { "name": "Me (Who Am I?)", "request": { "method": "GET", "url": "http://localhost:4000/api/auth/me" } },
+        { "name": "Refresh Token", "request": { "method": "POST", "url": "http://localhost:4000/api/auth/refresh" } }
+      ]
+    },
+    {
+      "name": "📂 Public Data",
+      "item": [
+        { "name": "Get Categories", "request": { "method": "GET", "url": "http://localhost:4000/api/categories" } },
+        { "name": "Get Accessibility Features", "request": { "method": "GET", "url": "http://localhost:4000/api/accessibility-features" } },
+        { "name": "Get Features by Group", "request": { "method": "GET", "url": "http://localhost:4000/api/accessibility-features?group=mobility" } }
+      ]
+    },
+    {
+      "name": "📍 POIs",
+      "item": [
+        { "name": "List POIs (paginated)", "request": { "method": "GET", "url": "http://localhost:4000/api/pois?limit=10&offset=0" } },
+        { "name": "List POIs (filter category)", "request": { "method": "GET", "url": "http://localhost:4000/api/pois?category=1&min_score=5" } },
+        { "name": "List POIs (filter bbox)", "request": { "method": "GET", "url": "http://localhost:4000/api/pois?bbox=106.6,10.8,106.7,10.9" } },
+        { "name": "Nearby POIs", "request": { "method": "GET", "url": "http://localhost:4000/api/pois/nearby?lat=10.854&lng=106.628&radius=1000&limit=10" } },
+        { "name": "GeoJSON FeatureCollection", "request": { "method": "GET", "url": "http://localhost:4000/api/pois.geojson" } },
+        { "name": "GeoJSON (filtered)", "request": { "method": "GET", "url": "http://localhost:4000/api/pois.geojson?category=1&min_score=5&search=cafe" } },
+        { "name": "POI Detail", "request": { "method": "GET", "url": "http://localhost:4000/api/pois/1" } },
+        {
+          "name": "Create POI",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/pois", "body": { "mode": "raw", "raw": "{\"name\": \"DMap Test HQ\", \"name_vi\": \"Trụ sở Test DMap\", \"lat\": 10.854, \"lng\": 106.628, \"category_id\": 1, \"description\": \"Mô tả test\", \"address\": \"123 Quang Trung, Q12\", \"accessibility_features\": [{\"feature_id\": 1, \"quality_rating\": 8, \"note\": \"Lối đi tốt\"}]}" } }
+        },
+        {
+          "name": "Update POI",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/pois/1", "body": { "mode": "raw", "raw": "{\"name\": \"Updated Location\", \"description\": \"Updated desc\"}" } }
+        },
+        { "name": "Delete POI (soft)", "request": { "method": "DELETE", "url": "http://localhost:4000/api/pois/1" } },
+        {
+          "name": "Flag POI",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/pois/1/flag", "body": { "mode": "raw", "raw": "{\"reason\": \"Vị trí không có thực\"}" } }
+        }
+      ]
+    },
+    {
+      "name": "⭐ Reviews",
+      "item": [
+        { "name": "Get POI Reviews", "request": { "method": "GET", "url": "http://localhost:4000/api/pois/1/reviews" } },
+        {
+          "name": "Add Review (JSON)",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/pois/1/reviews", "body": { "mode": "raw", "raw": "{\"rating\": 8, \"comment\": \"Rất tốt cho xe lăn!\", \"disability_type\": \"mobility\"}" } }
+        },
+        {
+          "name": "Add Review (with Image)",
+          "request": { "method": "POST", "url": "http://localhost:4000/api/pois/1/reviews", "body": { "mode": "formdata", "formdata": [{"key": "rating", "value": "7", "type": "text"}, {"key": "comment", "value": "Lối đi ổn", "type": "text"}, {"key": "image", "type": "file", "src": ""}] } }
+        },
+        {
+          "name": "Update Review",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/pois/1/reviews/1", "body": { "mode": "raw", "raw": "{\"rating\": 9, \"comment\": \"Updated comment\"}" } }
+        },
+        { "name": "Delete Review", "request": { "method": "DELETE", "url": "http://localhost:4000/api/pois/1/reviews/1" } }
+      ]
+    },
+    {
+      "name": "📸 Photos",
+      "item": [
+        { "name": "Get POI Photos", "request": { "method": "GET", "url": "http://localhost:4000/api/pois/1/photos" } },
+        {
+          "name": "Upload Photo (Cloudinary)",
+          "request": { "method": "POST", "url": "http://localhost:4000/api/pois/1/photos", "body": { "mode": "formdata", "formdata": [{"key": "image", "type": "file", "src": ""}] } }
+        }
+      ]
+    },
+    {
+      "name": "🔖 Bookmarks (Saved Places)",
+      "item": [
+        {
+          "name": "Save POI to Collection",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/pois/1/save", "body": { "mode": "raw", "raw": "{\"collection_name\": \"Cafe Yêu Thích\"}" } }
+        },
+        {
+          "name": "Unsave POI (query param)",
+          "request": { "method": "DELETE", "url": "http://localhost:4000/api/pois/1/save?collection_name=Cafe%20Y%C3%AAu%20Th%C3%ADch" }
+        }
+      ]
+    },
+    {
+      "name": "🔍 Search (Module 4)",
+      "item": [
+        { "name": "Autocomplete", "request": { "method": "GET", "url": "http://localhost:4000/api/search/autocomplete?q=cafe" } }
+      ]
+    },
+    {
+      "name": "👍 Reactions (Module 2)",
+      "item": [
+        { "name": "Toggle Helpful Vote", "request": { "method": "POST", "url": "http://localhost:4000/api/pois/1/reviews/1/helpful" } }
+      ]
+    },
+    {
+      "name": "🏢 Business Claiming (Module 3)",
+      "item": [
+        {
+          "name": "Submit Claim (with document)",
+          "request": { "method": "POST", "url": "http://localhost:4000/api/pois/1/claim", "body": { "mode": "formdata", "formdata": [{"key": "document", "type": "file", "src": ""}] } }
+        }
+      ]
+    },
+    {
+      "name": "🚩 Review Reports (Module 5)",
+      "item": [
+        {
+          "name": "Report Review",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/reviews/1/report", "body": { "mode": "raw", "raw": "{\"reason\": \"Bình luận spam / không liên quan\"}" } }
+        },
+        { "name": "Community Leaderboard", "request": { "method": "GET", "url": "http://localhost:4000/api/users/leaderboard" } }
+      ]
+    },
+    {
+      "name": "👤 User Profile",
+      "item": [
+        { "name": "Get Profile", "request": { "method": "GET", "url": "http://localhost:4000/api/users/profile" } },
+        {
+          "name": "Update Profile",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/users/profile", "body": { "mode": "raw", "raw": "{\"username\": \"newusername\", \"oldPassword\": \"123456\", \"newPassword\": \"newpass789\"}" } }
+        },
+        { "name": "My Contributions", "request": { "method": "GET", "url": "http://localhost:4000/api/users/profile/contributions?limit=20&offset=0" } },
+        { "name": "My Saved Collections", "request": { "method": "GET", "url": "http://localhost:4000/api/users/profile/saved" } }
+      ]
+    },
+    {
+      "name": "🛡️ Admin Dashboard",
+      "item": [
+        { "name": "Stats Overview", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/stats" } },
+        { "name": "View Pending POIs", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/pois/pending" } },
+        {
+          "name": "Approve/Reject POI",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/admin/pois/1/review", "body": { "mode": "raw", "raw": "{\"status\": \"approved\", \"note\": \"Looks authentic\"}" } }
+        },
+        { "name": "List Users (paginated)", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/users?limit=50&offset=0" } },
+        {
+          "name": "Create User",
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/admin/users", "body": { "mode": "raw", "raw": "{\"email\": \"newmod@dmap.vn\", \"password\": \"123456\", \"role\": \"moderator\"}" } }
+        },
+        {
+          "name": "Update User Role/Status",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/admin/users/2", "body": { "mode": "raw", "raw": "{\"role\": \"moderator\", \"trust_score\": 80}" } }
+        },
+        { "name": "Delete User (soft)", "request": { "method": "DELETE", "url": "http://localhost:4000/api/admin/users/2" } },
+        {
+          "name": "Ban/Unban User",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/admin/users/2/status", "body": { "mode": "raw", "raw": "{\"status\": \"banned\"}" } }
+        },
+        { "name": "View Flagged POIs", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/flags" } },
+        { "name": "Resolve Flagged POI", "request": { "method": "POST", "url": "http://localhost:4000/api/admin/flags/1/resolve" } },
+        { "name": "Edit History (paginated)", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/history?limit=50&offset=0" } },
+        { "name": "Rollback POI", "request": { "method": "POST", "url": "http://localhost:4000/api/admin/rollback/1" } },
+        { "name": "List Business Claims", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/claims?status=pending" } },
+        {
+          "name": "Approve/Reject Claim",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/admin/claims/1", "body": { "mode": "raw", "raw": "{\"status\": \"approved\", \"admin_note\": \"Giấy tờ hợp lệ\"}" } }
+        },
+        { "name": "List Review Reports", "request": { "method": "GET", "url": "http://localhost:4000/api/admin/reports?status=pending" } },
+        {
+          "name": "Resolve Review Report",
+          "request": { "method": "PUT", "header": [{"key": "Content-Type", "value": "application/json"}], "url": "http://localhost:4000/api/admin/reports/1", "body": { "mode": "raw", "raw": "{\"status\": \"resolved\", \"delete_review\": true}" } }
+        }
+      ]
+    }
+  ]
+}

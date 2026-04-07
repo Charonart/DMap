@@ -1,0 +1,43 @@
+# ── Environment & Secrets ──
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Dependencies ──
+node_modules/
+.npm
+.pnpm-debug.log*
+yarn-error.log*
+
+# ── Build & Static ──
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Large Data & Media ──
+/data/*.mbtiles
+/data/*.sql.gz
+/uploads/
+# logo.png is large but may be a source asset; ignoring by default if needed
+logo.png 
+/uploads
+
+# ── System / IDE ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ── Tools ──
+.agents/
+.gemini/
+coverage/
+.nyc_output
+.terraform/
+.vagrant/
