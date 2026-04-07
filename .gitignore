@@ -24,6 +24,7 @@ next-env.d.ts
 /uploads/
 # logo.png is large but may be a source asset; ignoring by default if needed
 logo.png 
+/uploads
 
 # ── System / IDE ──
 .DS_Store
