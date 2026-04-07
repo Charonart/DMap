@@ -2,7 +2,9 @@
 // DMap Backend - Express.js API Server
 // 1-10 Accessibility Scoring System
 // ============================================
-require("dotenv").config({ path: "../.env" });
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") }); // fallback for local dev
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -25,15 +27,18 @@ const reactionRoutes = require("./routes/reactionRoutes");
 const claimRoutes = require("./routes/claimRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const poiController = require("./controllers/poiController");
-const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 // ── Middleware ──────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: false })); // allows serving images to frontend
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+    : true,
+  credentials: true,
+}));
 
 // Fix #6: Body parsers MUST come BEFORE any middleware that reads req.body
 app.use(express.json());
@@ -52,7 +57,7 @@ app.use((req, res, next) => {
 // ── Rate Limiting ────────────────────────────
 const rootLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 9999999,
+  max: 1000, // Reduced from 9999999
   message: {
     status: "error",
     message: "Quá nhiều yêu cầu, vui lòng thử lại sau 15 phút.",
@@ -60,7 +65,7 @@ const rootLimiter = rateLimit({
 });
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 9999,
+  max: 50, // Reduced from 9999
   message: { status: "error", message: "Quá nhiều yêu cầu xác thực." },
 });
 
@@ -101,8 +106,17 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 
 // ── Start Server ───────────────────────────
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🗺️  DMap API running on http://localhost:${PORT}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📍 GeoJSON: http://localhost:${PORT}/api/pois.geojson`);
+});
+
+// ── Graceful Shutdown ──────────────────────
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received. Shutting down gracefully...");
+  server.close(async () => {
+    console.log("HTTP server closed.");
+    await pool.end();
+    console.log("Database pool closed.");
+    process.exit(0);
+  });
 });

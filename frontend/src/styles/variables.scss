@@ -64,12 +64,17 @@ $font-sans: var(--font-inter), sans-serif;
 $font-mono: var(--font-roboto-mono), monospace;
 
 // Z-Index Layer Management
+// Ordered from lowest to highest for clarity:
+//   map(0) < map-controls(10) < sheet(100) < sticky(200)
+//   < header(500) < dropdown(600) < modal-backdrop(1000)
+//   < modal(1010) < tooltip(1200) < toast(1500)
 $z-layers: (
   "map": 0,
   "map-controls": 10,
   "sheet": 100,
   "sticky": 200,
-  "header": 10,
+  "header": 500,
+  "dropdown": 600,
   "modal-backdrop": 1000,
   "modal": 1010,
   "tooltip": 1200,

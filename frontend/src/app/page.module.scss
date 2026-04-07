@@ -62,7 +62,7 @@
   top: 4rem; // 16 * 0.25rem
   left: $space-2;
   right: $space-2;
-  z-index: 20;
+  z-index: z-index("map-controls");
   pointer-events: auto;
 
   @media (min-width: 640px) { // sm

@@ -49,7 +49,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: z-index("dropdown");
 }
 
 // Dropdown card
@@ -61,7 +61,7 @@
   background-color: $color-surface-container-lowest;
   border-radius: $radius-xl;
   box-shadow: $shadow-m3-lg;
-  z-index: 100;
+  z-index: z-index("dropdown");
   overflow: hidden;
 
   animation: dropIn 0.15s ease-out;
