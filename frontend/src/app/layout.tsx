@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
+import { GoogleAnalytics } from '@next/third-parties/google'
 import QueryProvider from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import "@/styles/globals.scss";
@@ -54,6 +55,7 @@ export default function RootLayout({
           </AuthProvider>
         </QueryProvider>
       </body>
+      <GoogleAnalytics gaId="GTM-W3HM66ZG" />
     </html>
   );
 }

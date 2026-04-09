@@ -30,7 +30,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.0",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "@next/third-parties": "^16.2.3"
   },
   "devDependencies": {
     "@types/node": "^20",
