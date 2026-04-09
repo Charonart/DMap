@@ -123,8 +123,8 @@ export default function PendingPoisPage() {
 
       <Dialog open={!!selectedPoi} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent style={{ maxWidth: action === 'detail' ? '600px' : '425px', padding: action === 'detail' ? '1.5rem 1.5rem 0' : '1.5rem' }}>
-          <DialogHeader style={action === 'detail' ? { marginBottom: '1rem' } : undefined}>
-            <DialogTitle>
+          <DialogHeader style={action === 'detail' ? { marginBottom: '1rem', display: 'none' } : undefined}>
+            <DialogTitle className={action === 'detail' ? 'sr-only' : ''}>
               {action === 'approved' ? 'Phê duyệt địa điểm' : action === 'rejected' ? 'Từ chối địa điểm' : 'Chi tiết địa điểm'}
             </DialogTitle>
           </DialogHeader>

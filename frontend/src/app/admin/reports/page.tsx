@@ -226,8 +226,8 @@ export default function ReportsPage() {
       {/* POI Info Dialog */}
       <Dialog open={!!detailPoiId} onOpenChange={(open) => !open && setDetailPoiId(null)}>
         <DialogContent style={{ maxWidth: '600px', padding: '1.5rem 1.5rem 0' }}>
-          <DialogHeader style={{ marginBottom: '1rem' }}>
-            <DialogTitle>Chi tiết địa điểm</DialogTitle>
+          <DialogHeader style={{ marginBottom: '1rem', display: 'none' }}>
+            <DialogTitle className="sr-only">Chi tiết địa điểm</DialogTitle>
           </DialogHeader>
           <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 'calc(80vh - 4rem)' }}>
             <div style={{ flex: 1, overflowY: 'auto' }} className="no-scrollbar">

@@ -71,7 +71,7 @@ $font-mono: var(--font-roboto-mono), monospace;
 $z-layers: (
   "map": 0,
   "map-controls": 10,
-  "sheet": 100,
+  "sheet": 600,
   "sticky": 200,
   "header": 500,
   "dropdown": 600,
@@ -84,7 +84,9 @@ $z-layers: (
 @function z-index($layer) {
   @if map-has-key($z-layers, $layer) {
     @return map-get($z-layers, $layer);
-  } @else {
+  }
+
+  @else {
     @warn "No layer found for `#{$layer}` in $z-layers map.";
     @return null;
   }

@@ -15,8 +15,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DMap - Accessibility Map",
-  description: "Community-driven accessibility map for disabled people in Vietnam.",
+  title: "Hải Đăng Map",
+  description: "Bản đồ hỗ trợ người khuyết tật tại Việt Nam",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

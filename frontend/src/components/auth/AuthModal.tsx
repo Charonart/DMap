@@ -6,7 +6,9 @@ import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 
 export function AuthModal() {
-  const { isAuthModalOpen, authModalView, setAuthModalOpen } = useAuthStore();
+  const isAuthModalOpen = useAuthStore((state) => state.isAuthModalOpen);
+  const authModalView = useAuthStore((state) => state.authModalView);
+  const setAuthModalOpen = useAuthStore((state) => state.setAuthModalOpen);
 
   const isLogin = authModalView === 'login';
 
