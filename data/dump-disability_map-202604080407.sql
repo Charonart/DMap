@@ -1,0 +1,1539 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 15.4 (Debian 15.4-1.pgdg110+1)
+-- Dumped by pg_dump version 17.0
+
+-- Started on 2026-04-08 04:07:03
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 9 (class 2615 OID 2200)
+-- Name: public; Type: SCHEMA; Schema: -; Owner: pg_database_owner
+--
+
+CREATE SCHEMA public;
+
+
+ALTER SCHEMA public OWNER TO pg_database_owner;
+
+--
+-- TOC entry 4792 (class 0 OID 0)
+-- Dependencies: 9
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
+
+--
+-- TOC entry 1209 (class 1255 OID 27934)
+-- Name: recalculate_poi_score(integer); Type: FUNCTION; Schema: public; Owner: lequy
+--
+
+CREATE FUNCTION public.recalculate_poi_score(target_poi_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_total_weight NUMERIC := 0;
+    v_total_weighted_score NUMERIC := 0;
+    v_final_score SMALLINT;
+
+    v_rv_weighted_score NUMERIC := 0;
+    v_rv_weight NUMERIC := 0;
+BEGIN
+    -- A. Calculate from poi_accessibility
+    -- Time decay: 0.5 if older than 1 year
+    SELECT 
+        COALESCE(SUM(
+            pa.quality_rating * 
+            COALESCE(u.trust_score, 1.0) * 
+            (CASE WHEN pa.reported_at < NOW() - INTERVAL '12 months' THEN 0.5 ELSE 1.0 END)
+        ), 0),
+        COALESCE(SUM(
+            COALESCE(u.trust_score, 1.0) * 
+            (CASE WHEN pa.reported_at < NOW() - INTERVAL '12 months' THEN 0.5 ELSE 1.0 END)
+        ), 0)
+    INTO v_total_weighted_score, v_total_weight
+    FROM poi_accessibility pa
+    LEFT JOIN users u ON pa.user_id = u.id
+    WHERE pa.poi_id = target_poi_id AND pa.quality_rating IS NOT NULL;
+
+    -- B. Calculate from user_reviews
+    SELECT 
+        COALESCE(SUM(
+            ur.rating * 
+            COALESCE(u.trust_score, 1.0) * 
+            (CASE WHEN ur.created_at < NOW() - INTERVAL '12 months' THEN 0.5 ELSE 1.0 END)
+        ), 0),
+        COALESCE(SUM(
+            COALESCE(u.trust_score, 1.0) * 
+            (CASE WHEN ur.created_at < NOW() - INTERVAL '12 months' THEN 0.5 ELSE 1.0 END)
+        ), 0)
+    INTO v_rv_weighted_score, v_rv_weight
+    FROM user_reviews ur
+    LEFT JOIN users u ON ur.user_id = u.id
+    WHERE ur.poi_id = target_poi_id;
+
+    -- Accumulate weights
+    v_total_weighted_score := v_total_weighted_score + v_rv_weighted_score;
+    v_total_weight := v_total_weight + v_rv_weight;
+
+    -- C. Update POI score
+    IF v_total_weight > 0 THEN
+        v_final_score := ROUND(v_total_weighted_score / v_total_weight);
+        IF v_final_score < 1 THEN v_final_score := 1; END IF;
+        IF v_final_score > 10 THEN v_final_score := 10; END IF;
+    ELSE
+        -- 0 = unrated
+        v_final_score := 0;
+    END IF;
+
+    UPDATE pois SET overall_score = v_final_score WHERE id = target_poi_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.recalculate_poi_score(target_poi_id integer) OWNER TO lequy;
+
+--
+-- TOC entry 1208 (class 1255 OID 19713)
+-- Name: update_timestamp(); Type: FUNCTION; Schema: public; Owner: lequy
+--
+
+CREATE FUNCTION public.update_timestamp() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_timestamp() OWNER TO lequy;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 289 (class 1259 OID 19661)
+-- Name: accessibility_features; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.accessibility_features (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL,
+    name_vi character varying(100),
+    icon character varying(50),
+    description text,
+    feature_group character varying(50)
+);
+
+
+ALTER TABLE public.accessibility_features OWNER TO lequy;
+
+--
+-- TOC entry 288 (class 1259 OID 19660)
+-- Name: accessibility_features_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.accessibility_features_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.accessibility_features_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4793 (class 0 OID 0)
+-- Dependencies: 288
+-- Name: accessibility_features_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.accessibility_features_id_seq OWNED BY public.accessibility_features.id;
+
+
+--
+-- TOC entry 285 (class 1259 OID 19627)
+-- Name: categories; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.categories (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL,
+    name_vi character varying(100),
+    icon character varying(50),
+    description text,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.categories OWNER TO lequy;
+
+--
+-- TOC entry 284 (class 1259 OID 19626)
+-- Name: categories_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.categories_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.categories_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4794 (class 0 OID 0)
+-- Dependencies: 284
+-- Name: categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.categories_id_seq OWNED BY public.categories.id;
+
+
+--
+-- TOC entry 296 (class 1259 OID 19773)
+-- Name: edit_history; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.edit_history (
+    id integer NOT NULL,
+    poi_id integer,
+    previous_data jsonb NOT NULL,
+    action_type character varying(50) DEFAULT 'update'::character varying,
+    edited_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    user_id uuid,
+    CONSTRAINT edit_history_action_type_check CHECK (((action_type)::text = ANY ((ARRAY['update'::character varying, 'delete'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.edit_history OWNER TO lequy;
+
+--
+-- TOC entry 295 (class 1259 OID 19772)
+-- Name: edit_history_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.edit_history_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.edit_history_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4795 (class 0 OID 0)
+-- Dependencies: 295
+-- Name: edit_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.edit_history_id_seq OWNED BY public.edit_history.id;
+
+
+--
+-- TOC entry 291 (class 1259 OID 19672)
+-- Name: poi_accessibility; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.poi_accessibility (
+    id integer NOT NULL,
+    poi_id integer NOT NULL,
+    feature_id integer NOT NULL,
+    is_available boolean DEFAULT true,
+    quality_rating smallint,
+    note text,
+    reported_at timestamp without time zone DEFAULT now(),
+    reported_by uuid,
+    user_id uuid,
+    CONSTRAINT poi_accessibility_quality_rating_check CHECK (((quality_rating >= 1) AND (quality_rating <= 10)))
+);
+
+
+ALTER TABLE public.poi_accessibility OWNER TO lequy;
+
+--
+-- TOC entry 290 (class 1259 OID 19671)
+-- Name: poi_accessibility_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.poi_accessibility_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.poi_accessibility_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4796 (class 0 OID 0)
+-- Dependencies: 290
+-- Name: poi_accessibility_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.poi_accessibility_id_seq OWNED BY public.poi_accessibility.id;
+
+
+--
+-- TOC entry 305 (class 1259 OID 36281)
+-- Name: poi_claims; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.poi_claims (
+    id integer NOT NULL,
+    poi_id integer,
+    user_id uuid,
+    document_url text NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    admin_note text,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT poi_claims_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.poi_claims OWNER TO lequy;
+
+--
+-- TOC entry 304 (class 1259 OID 36280)
+-- Name: poi_claims_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.poi_claims_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.poi_claims_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4797 (class 0 OID 0)
+-- Dependencies: 304
+-- Name: poi_claims_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.poi_claims_id_seq OWNED BY public.poi_claims.id;
+
+
+--
+-- TOC entry 298 (class 1259 OID 27936)
+-- Name: poi_flags; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.poi_flags (
+    id integer NOT NULL,
+    poi_id integer NOT NULL,
+    reason text,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    user_id uuid
+);
+
+
+ALTER TABLE public.poi_flags OWNER TO lequy;
+
+--
+-- TOC entry 297 (class 1259 OID 27935)
+-- Name: poi_flags_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.poi_flags_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.poi_flags_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4798 (class 0 OID 0)
+-- Dependencies: 297
+-- Name: poi_flags_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.poi_flags_id_seq OWNED BY public.poi_flags.id;
+
+
+--
+-- TOC entry 300 (class 1259 OID 27960)
+-- Name: poi_photos; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.poi_photos (
+    id integer NOT NULL,
+    poi_id integer NOT NULL,
+    image_url character varying(255) NOT NULL,
+    is_verified boolean DEFAULT false,
+    uploaded_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    review_id integer,
+    user_id uuid
+);
+
+
+ALTER TABLE public.poi_photos OWNER TO lequy;
+
+--
+-- TOC entry 299 (class 1259 OID 27959)
+-- Name: poi_photos_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.poi_photos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.poi_photos_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4799 (class 0 OID 0)
+-- Dependencies: 299
+-- Name: poi_photos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.poi_photos_id_seq OWNED BY public.poi_photos.id;
+
+
+--
+-- TOC entry 287 (class 1259 OID 19639)
+-- Name: pois; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.pois (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    name_vi character varying(255),
+    description text,
+    address character varying(500),
+    location public.geometry(Point,4326) NOT NULL,
+    category_id integer,
+    phone character varying(20),
+    website character varying(255),
+    opening_hours character varying(100),
+    overall_score smallint DEFAULT 0,
+    is_verified boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    flag_count integer DEFAULT 0,
+    is_hidden boolean DEFAULT false,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    note text,
+    user_id uuid,
+    deleted_at timestamp with time zone,
+    owner_user_id uuid,
+    CONSTRAINT pois_overall_score_check CHECK (((overall_score >= 0) AND (overall_score <= 10))),
+    CONSTRAINT pois_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.pois OWNER TO lequy;
+
+--
+-- TOC entry 286 (class 1259 OID 19638)
+-- Name: pois_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.pois_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pois_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4800 (class 0 OID 0)
+-- Dependencies: 286
+-- Name: pois_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.pois_id_seq OWNED BY public.pois.id;
+
+
+--
+-- TOC entry 303 (class 1259 OID 36263)
+-- Name: review_reactions; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.review_reactions (
+    user_id uuid NOT NULL,
+    review_id integer NOT NULL,
+    reaction_type character varying(20) DEFAULT 'helpful'::character varying,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.review_reactions OWNER TO lequy;
+
+--
+-- TOC entry 307 (class 1259 OID 36308)
+-- Name: review_reports; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.review_reports (
+    id integer NOT NULL,
+    review_id integer,
+    user_id uuid,
+    reason text NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT review_reports_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'resolved'::character varying, 'dismissed'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.review_reports OWNER TO lequy;
+
+--
+-- TOC entry 306 (class 1259 OID 36307)
+-- Name: review_reports_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.review_reports_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.review_reports_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4801 (class 0 OID 0)
+-- Dependencies: 306
+-- Name: review_reports_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.review_reports_id_seq OWNED BY public.review_reports.id;
+
+
+--
+-- TOC entry 302 (class 1259 OID 28028)
+-- Name: user_bookmarks; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.user_bookmarks (
+    id integer NOT NULL,
+    user_id uuid,
+    poi_id integer,
+    collection_name character varying(100) DEFAULT 'Y??u th??ch'::character varying,
+    saved_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.user_bookmarks OWNER TO lequy;
+
+--
+-- TOC entry 301 (class 1259 OID 28027)
+-- Name: user_bookmarks_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.user_bookmarks_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_bookmarks_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4802 (class 0 OID 0)
+-- Dependencies: 301
+-- Name: user_bookmarks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.user_bookmarks_id_seq OWNED BY public.user_bookmarks.id;
+
+
+--
+-- TOC entry 293 (class 1259 OID 19697)
+-- Name: user_reviews; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.user_reviews (
+    id integer NOT NULL,
+    poi_id integer NOT NULL,
+    reviewer_name character varying(100),
+    rating smallint NOT NULL,
+    comment text,
+    disability_type character varying(50),
+    visited_at date,
+    created_at timestamp without time zone DEFAULT now(),
+    user_id uuid,
+    helpful_count integer DEFAULT 0,
+    CONSTRAINT user_reviews_rating_check CHECK (((rating >= 1) AND (rating <= 10)))
+);
+
+
+ALTER TABLE public.user_reviews OWNER TO lequy;
+
+--
+-- TOC entry 292 (class 1259 OID 19696)
+-- Name: user_reviews_id_seq; Type: SEQUENCE; Schema: public; Owner: lequy
+--
+
+CREATE SEQUENCE public.user_reviews_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_reviews_id_seq OWNER TO lequy;
+
+--
+-- TOC entry 4803 (class 0 OID 0)
+-- Dependencies: 292
+-- Name: user_reviews_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: lequy
+--
+
+ALTER SEQUENCE public.user_reviews_id_seq OWNED BY public.user_reviews.id;
+
+
+--
+-- TOC entry 294 (class 1259 OID 19742)
+-- Name: users; Type: TABLE; Schema: public; Owner: lequy
+--
+
+CREATE TABLE public.users (
+    email character varying(255) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    role character varying(50) DEFAULT 'user'::character varying,
+    status character varying(50) DEFAULT 'active'::character varying,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    trust_score numeric(3,2) DEFAULT 1.00,
+    username character varying(50),
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    deleted_at timestamp with time zone,
+    CONSTRAINT users_role_check CHECK (((role)::text = ANY ((ARRAY['user'::character varying, 'moderator'::character varying, 'admin'::character varying])::text[]))),
+    CONSTRAINT users_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'banned'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.users OWNER TO lequy;
+
+--
+-- TOC entry 4502 (class 2604 OID 19664)
+-- Name: accessibility_features id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.accessibility_features ALTER COLUMN id SET DEFAULT nextval('public.accessibility_features_id_seq'::regclass);
+
+
+--
+-- TOC entry 4492 (class 2604 OID 19630)
+-- Name: categories id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.categories_id_seq'::regclass);
+
+
+--
+-- TOC entry 4514 (class 2604 OID 19776)
+-- Name: edit_history id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.edit_history ALTER COLUMN id SET DEFAULT nextval('public.edit_history_id_seq'::regclass);
+
+
+--
+-- TOC entry 4503 (class 2604 OID 19675)
+-- Name: poi_accessibility id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility ALTER COLUMN id SET DEFAULT nextval('public.poi_accessibility_id_seq'::regclass);
+
+
+--
+-- TOC entry 4527 (class 2604 OID 36284)
+-- Name: poi_claims id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_claims ALTER COLUMN id SET DEFAULT nextval('public.poi_claims_id_seq'::regclass);
+
+
+--
+-- TOC entry 4517 (class 2604 OID 27939)
+-- Name: poi_flags id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_flags ALTER COLUMN id SET DEFAULT nextval('public.poi_flags_id_seq'::regclass);
+
+
+--
+-- TOC entry 4519 (class 2604 OID 27963)
+-- Name: poi_photos id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_photos ALTER COLUMN id SET DEFAULT nextval('public.poi_photos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4494 (class 2604 OID 19642)
+-- Name: pois id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.pois ALTER COLUMN id SET DEFAULT nextval('public.pois_id_seq'::regclass);
+
+
+--
+-- TOC entry 4530 (class 2604 OID 36311)
+-- Name: review_reports id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reports ALTER COLUMN id SET DEFAULT nextval('public.review_reports_id_seq'::regclass);
+
+
+--
+-- TOC entry 4522 (class 2604 OID 28031)
+-- Name: user_bookmarks id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_bookmarks ALTER COLUMN id SET DEFAULT nextval('public.user_bookmarks_id_seq'::regclass);
+
+
+--
+-- TOC entry 4506 (class 2604 OID 19700)
+-- Name: user_reviews id; Type: DEFAULT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_reviews ALTER COLUMN id SET DEFAULT nextval('public.user_reviews_id_seq'::regclass);
+
+
+--
+-- TOC entry 4768 (class 0 OID 19661)
+-- Dependencies: 289
+-- Data for Name: accessibility_features; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.accessibility_features (id, name, name_vi, icon, description, feature_group) FROM stdin;
+1	wheelchair_ramp	Lối đi xe lăn	wheelchair	Có đường dốc cho xe lăn	Vận Động
+2	elevator	Thang máy	arrow-up-down	Có thang máy cho người khuyết tật	Vận Động
+3	accessible_parking	Bãi đỗ xe hỗ trợ	car	Có chỗ đỗ xe dành riêng	Vận Động
+4	wide_doorway	Cửa rộng	door-open	Cửa đủ rộng cho xe lăn (≥90cm)	Vận Động
+5	accessible_toilet	Nhà vệ sinh hỗ trợ	bath	Nhà vệ sinh thiết kế cho NKT	Vận Động
+6	flat_surface	Mặt phẳng, không bậc	road	Đường đi bằng phẳng	Vận Động
+7	handrails	Tay vịn	grip-lines	Có tay vịn hỗ trợ	Vận Động
+8	braille_sign	Bảng chữ nổi Braille	braille	Có bảng chữ nổi	Thị Giác
+9	audio_signal	Âm thanh hỗ trợ	volume-high	Có tín hiệu âm thanh	Thị Giác
+10	tactile_paving	Gạch dẫn đường	road	Có gạch tactile dẫn đường	Thị Giác
+11	high_contrast_sign	Biển báo tương phản cao	eye	Biển báo dễ nhìn	Thị Giác
+12	sign_language	Ngôn ngữ ký hiệu	hands	Nhân viên biết ký hiệu	Thính Giác
+13	visual_alarm	Chuông báo hình ảnh	bell	Báo động bằng hình ảnh/đèn	Thính Giác
+14	hearing_loop	Vòng cảm ứng thính giác	ear-listen	Có thiết bị hỗ trợ thính giác	Thính Giác
+15	simple_signage	Biển báo đơn giản	signs-post	Biển báo dễ hiểu	Tâm Lý
+16	quiet_space	Không gian yên tĩnh	volume-xmark	Có khu vực yên tĩnh	Tâm Lý
+\.
+
+
+--
+-- TOC entry 4764 (class 0 OID 19627)
+-- Dependencies: 285
+-- Data for Name: categories; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.categories (id, name, name_vi, icon, description, created_at) FROM stdin;
+1	restaurant	Nhà hàng	utensils	Nhà hàng, quán ăn	2026-03-22 17:04:18.933455
+2	hospital	Bệnh viện	hospital	Bệnh viện, phòng khám	2026-03-22 17:04:18.933455
+3	school	Trường học	school	Trường học, trung tâm đào tạo	2026-03-22 17:04:18.933455
+4	park	Công viên	tree	Công viên, khu vui chơi	2026-03-22 17:04:18.933455
+5	shopping	Mua sắm	shopping-bag	Trung tâm thương mại, siêu thị	2026-03-22 17:04:18.933455
+6	transport	Giao thông	bus	Trạm xe buýt, nhà ga	2026-03-22 17:04:18.933455
+7	government	Cơ quan công	building	Cơ quan nhà nước, UBND	2026-03-22 17:04:18.933455
+8	accommodation	Lưu trú	bed	Khách sạn, nhà nghỉ	2026-03-22 17:04:18.933455
+9	entertainment	Giải trí	film	Rạp phim, nhà hát, bảo tàng	2026-03-22 17:04:18.933455
+10	healthcare	Y tế	heart-pulse	Nhà thuốc, phòng khám chuyên khoa	2026-03-22 17:04:18.933455
+\.
+
+
+--
+-- TOC entry 4775 (class 0 OID 19773)
+-- Dependencies: 296
+-- Data for Name: edit_history; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.edit_history (id, poi_id, previous_data, action_type, edited_at, user_id) FROM stdin;
+9	13	{"id": 13, "name": "Test 3", "note": "Looks authentic", "phone": null, "status": "approved", "address": "", "name_vi": null, "user_id": "8f81567b-ba54-4c09-878b-4e3ca4060ad9", "website": null, "location": "0101000020E610000060A78FD83EA85A40086DFCF2A0B62540", "is_hidden": false, "created_at": "2026-03-25T05:44:34.908Z", "flag_count": 0, "updated_at": "2026-03-25T06:26:06.399Z", "category_id": 2, "description": null, "is_verified": false, "opening_hours": null, "overall_score": 0}	update	2026-03-25 14:27:13.430285+00	b70745a3-ef3e-4043-9d29-5e099f81de9b
+\.
+
+
+--
+-- TOC entry 4770 (class 0 OID 19672)
+-- Dependencies: 291
+-- Data for Name: poi_accessibility; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.poi_accessibility (id, poi_id, feature_id, is_available, quality_rating, note, reported_at, reported_by, user_id) FROM stdin;
+1	1	1	t	7	Đường dốc tốt ở các tòa nhà chính	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+2	1	2	t	8	Thang máy hiện đại	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+3	1	4	t	8	Cửa tự động rộng	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+4	1	5	t	6	WC hỗ trợ ở tầng 1 một số tòa	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+5	2	1	t	6	Đường dốc ở cổng chính	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+6	2	2	t	7	Thang máy tòa chính	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+7	2	5	t	5	Nhà vệ sinh tầng 1	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+8	3	1	f	\N	Không có lối đi xe lăn	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+9	3	6	f	\N	Nhiều bậc thềm, đường gồ ghề	2026-03-22 17:04:18.941109	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+10	6	1	t	10	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+11	6	2	t	10	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+12	6	3	t	3	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+13	6	4	t	8	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+14	6	5	t	1	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+15	6	6	t	10	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+16	6	7	t	10	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+17	6	8	t	1	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+18	6	9	t	1	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+19	6	10	t	3	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+20	6	11	t	7	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+21	6	12	t	2	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+22	6	13	t	2	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+23	6	15	t	8	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+24	6	16	t	8	\N	2026-03-23 06:14:33.317195	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+55	20	11	t	5		2026-04-06 08:30:30.195212	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+56	21	10	t	5		2026-04-06 08:30:54.642957	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+57	22	3	t	5		2026-04-06 14:30:17.100927	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+\.
+
+
+--
+-- TOC entry 4784 (class 0 OID 36281)
+-- Dependencies: 305
+-- Data for Name: poi_claims; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.poi_claims (id, poi_id, user_id, document_url, status, admin_note, created_at) FROM stdin;
+1	21	b70745a3-ef3e-4043-9d29-5e099f81de9b	https://res.cloudinary.com/dfkrkrise/image/upload/v1775535606/dmap_claims/claim-poi21-1775535604700.jpg	pending	\N	2026-04-07 04:20:07.38341+00
+\.
+
+
+--
+-- TOC entry 4777 (class 0 OID 27936)
+-- Dependencies: 298
+-- Data for Name: poi_flags; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.poi_flags (id, poi_id, reason, created_at, user_id) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4779 (class 0 OID 27960)
+-- Dependencies: 300
+-- Data for Name: poi_photos; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.poi_photos (id, poi_id, image_url, is_verified, uploaded_at, review_id, user_id) FROM stdin;
+1	6	/uploads/poi-6-1774361862425-42371839.png	f	2026-03-24 14:17:42.838368+00	\N	b70745a3-ef3e-4043-9d29-5e099f81de9b
+2	6	/uploads/poi-6-1774361883471-503832108.jpg	f	2026-03-24 14:18:04.569873+00	\N	8f81567b-ba54-4c09-878b-4e3ca4060ad9
+4	13	https://res.cloudinary.com/dfkrkrise/image/upload/v1774635797/dmap_reviews/review-22-1774635791165.jpg	t	2026-03-27 18:23:10.741847+00	22	2d18acef-240d-4630-87b1-0f1eb948c1f0
+6	6	https://res.cloudinary.com/dfkrkrise/image/upload/v1775590673/dmap_reviews/review-25-1775590661435.png	t	2026-04-07 19:37:41.32873+00	25	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0
+\.
+
+
+--
+-- TOC entry 4766 (class 0 OID 19639)
+-- Dependencies: 287
+-- Data for Name: pois; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.pois (id, name, name_vi, description, address, location, category_id, phone, website, opening_hours, overall_score, is_verified, created_at, updated_at, flag_count, is_hidden, status, note, user_id, deleted_at, owner_user_id) FROM stdin;
+15	1234	\N	\N		0101000020E6100000B0EBC39C43A85A4028352FACF3B52540	2	\N	\N	\N	0	f	2026-03-27 05:40:53.028669	2026-03-27 05:40:53.028669	0	f	approved	\N	b70745a3-ef3e-4043-9d29-5e099f81de9b	\N	\N
+2	Bệnh viện Quận 12	Bệnh viện Quận 12	Bệnh viện có lối đi xe lăn, thang máy ở tòa chính.	Lê Thị Riêng, Thới An, Quận 12, TP.HCM	0101000020E6100000713D0AD7A3A85A409EEFA7C64BB72540	2	\N	\N	\N	6	t	2026-03-22 17:04:18.937802	2026-03-27 17:53:42.138103	0	f	approved	Looks authentic	\N	\N	\N
+13	Test 4	\N	\N		0101000020E610000060A78FD83EA85A40086DFCF2A0B62540	2	\N	\N	\N	8	f	2026-03-25 12:44:34.908053	2026-03-27 18:23:10.741847	0	f	approved	Looks authentic	8f81567b-ba54-4c09-878b-4e3ca4060ad9	\N	\N
+19	Gugu Ga ga	\N			0101000020E6100000FC9438D21BA85A4088EE04E538B62540	4	\N	\N	\N	0	f	2026-04-06 04:44:35.044582	2026-04-06 04:44:35.044582	0	f	approved	\N	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N	\N
+3	Chợ Quang Trung	Chợ Quang Trung	Chợ truyền thống. Lối đi hẹp, khó khăn cho xe lăn.	Quang Trung, Quận 12, TP.HCM	0101000020E6100000F2D24D6210A85A40C1CAA145B6B32540	5	\N	\N	\N	3	f	2026-03-22 17:04:18.937802	2026-03-25 13:26:06.39986	0	f	approved	\N	\N	\N	\N
+22	Cà Phê Thanh Đa	\N	\N	199 Bình Quới, Bình Thạnh, TP.HCM	0101000020E6100000F84FA57F75AE5A40904616CC03A42540	5	\N	\N	\N	5	f	2026-04-06 14:30:17.100927	2026-04-06 14:30:17.100927	0	f	pending	\N	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N	\N
+1	Quang Trung Software City	Công Viên Phần Mềm Quang Trung	Khu công nghệ phần mềm lớn nhất TP.HCM. Có thang máy, lối đi rộng.	Tô Ký, Trung Mỹ Tây, Quận 12, TP.HCM	0101000020E6100000D578E92631A85A406891ED7C3FB52540	7	\N	\N	\N	8	t	2026-03-22 17:04:18.937802	2026-04-06 14:36:00.652688	0	f	approved	Looks authentic	\N	\N	\N
+21	ss	\N	\N	\N	0101000020E6100000002887A4FFA75A403811E3411BB62540	4	\N	\N	\N	5	f	2026-04-06 08:30:54.642957	2026-04-07 04:11:36.263219	0	f	approved	oke\nthg này fake	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N	\N
+5	Test Place	\N	\N	\N	0101000020E6100000D578E92631A85A406891ED7C3FB52540	\N	\N	\N	\N	0	f	2026-03-23 03:17:27.59717	2026-04-07 05:04:47.821327	0	f	rejected	Vi phạm quy định, đã qua tố cáo.	\N	\N	\N
+20	aksdf	\N	\N	\N	0101000020E6100000CC2787A909A85A40A8F3FBD565B62540	2	\N	\N	\N	6	f	2026-04-06 08:30:30.195212	2026-04-07 05:04:53.673302	0	f	rejected	Vi phạm quy định, đã qua tố cáo.	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N	\N
+6	QTSC	\N	\N		0101000020E61000007C27877015A85A4040E1EFE63CB52540	2	\N	\N	\N	6	f	2026-03-23 06:14:33.317195	2026-04-07 19:37:41.32873	0	f	approved	\N	b70745a3-ef3e-4043-9d29-5e099f81de9b	\N	\N
+\.
+
+
+--
+-- TOC entry 4782 (class 0 OID 36263)
+-- Dependencies: 303
+-- Data for Name: review_reactions; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.review_reactions (user_id, review_id, reaction_type, created_at) FROM stdin;
+7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	2	helpful	2026-04-06 17:33:29.900745+00
+7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	19	helpful	2026-04-06 17:58:46.771245+00
+\.
+
+
+--
+-- TOC entry 4786 (class 0 OID 36308)
+-- Dependencies: 307
+-- Data for Name: review_reports; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.review_reports (id, review_id, user_id, reason, status, created_at) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4491 (class 0 OID 18319)
+-- Dependencies: 223
+-- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4781 (class 0 OID 28028)
+-- Dependencies: 302
+-- Data for Name: user_bookmarks; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.user_bookmarks (id, user_id, poi_id, collection_name, saved_at) FROM stdin;
+1	b70745a3-ef3e-4043-9d29-5e099f81de9b	1	Cafe Yêu Thích	2026-03-25 14:39:11.356926+00
+35	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	15	Yêu thích	2026-04-06 17:32:07.202105+00
+36	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	6	Yêu thích	2026-04-06 17:32:22.459775+00
+\.
+
+
+--
+-- TOC entry 4772 (class 0 OID 19697)
+-- Dependencies: 293
+-- Data for Name: user_reviews; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.user_reviews (id, poi_id, reviewer_name, rating, comment, disability_type, visited_at, created_at, user_id, helpful_count) FROM stdin;
+1	1	admin	8	Great!	mobility	\N	2026-03-24 18:02:55.821885	b70745a3-ef3e-4043-9d29-5e099f81de9b	0
+23	20	admin	7	oke đấy	general	\N	2026-04-06 14:33:58.075048	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	0
+19	13	testuser	8	Rất tốt cho xe lăn!	mobility	\N	2026-03-27 18:22:27.219062	2d18acef-240d-4630-87b1-0f1eb948c1f0	1
+22	13	testuser	7	Lối đi ổn	\N	\N	2026-03-27 18:23:10.741847	2d18acef-240d-4630-87b1-0f1eb948c1f0	0
+25	6	Admin D Map	7	ok de	general	\N	2026-04-07 19:37:41.32873	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	0
+2	1	admin	8	Great!	mobility	\N	2026-03-24 18:03:18.240102	b70745a3-ef3e-4043-9d29-5e099f81de9b	1
+\.
+
+
+--
+-- TOC entry 4773 (class 0 OID 19742)
+-- Dependencies: 294
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: lequy
+--
+
+COPY public.users (email, password_hash, role, status, created_at, trust_score, username, id, deleted_at) FROM stdin;
+user@example.com	$2b$10$9Xe/hqQ5PdP8okOdYuFDMOwxwZ6QyLSU.jmYeUafsktHKliR27aeu	user	active	2026-03-24 14:17:56.417517+00	1.00	user	8f81567b-ba54-4c09-878b-4e3ca4060ad9	\N
+admin@example.com	$2b$10$7PrV7DpEslqyJxzpA2Fc1.ibMjcILJQlIrnofvHPUd3bvVGr7tGpK	admin	active	2026-03-23 05:52:39.541934+00	1.00	newusername	b70745a3-ef3e-4043-9d29-5e099f81de9b	\N
+hacker@example.com	$2b$10$W/OMNBHWVmyr3UH0/9BgWuD6odrUJd1dxXq72BdeHSaY80itCzpNS	user	active	2026-03-25 12:52:09.631067+00	1.00	\N	e2ab4306-2f6a-4f8f-b06e-8a66acc69fd1	\N
+test@dmap.vien	$2b$10$tPR7.7dZSlTCXUeJpgoSauA5YUw3pV292lLEiTLCc89C3bM3f7Q8W	user	active	2026-03-25 13:46:06.788168+00	1.00	testuser	2e490619-d2af-4d0f-a89f-405cb882fb05	\N
+hacker@dmap.vn	$2b$10$9j9zkxt6arzIO4EyHV6EqODV2eawigpGZso9x.07uq1yKAIJTliqy	user	active	2026-03-25 14:18:03.122491+00	1.00	\N	51376426-b783-441b-bb35-e8f393dfb904	\N
+test@dmap.vn	$2b$10$qMmMUxg6IVH/znhwwqZT4u3YI6yk8I8pOyiwoFdjB8JZCl.I/bZRm	user	active	2026-03-27 17:36:45.013196+00	1.00	testuser	2d18acef-240d-4630-87b1-0f1eb948c1f0	\N
+admin@dmap.vn	$2a$10$IsfZcrxgsUro3hQcXoFS/.LgkSjin/m9qW9M0FXZCrq2erRIh3lkq	user	active	2026-03-23 04:26:58.733809+00	1.00	Admin D Map	7c75cb56-4d6e-4dc9-891a-10e80c27f5a0	\N
+\.
+
+
+--
+-- TOC entry 4804 (class 0 OID 0)
+-- Dependencies: 288
+-- Name: accessibility_features_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.accessibility_features_id_seq', 16, true);
+
+
+--
+-- TOC entry 4805 (class 0 OID 0)
+-- Dependencies: 284
+-- Name: categories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.categories_id_seq', 10, true);
+
+
+--
+-- TOC entry 4806 (class 0 OID 0)
+-- Dependencies: 295
+-- Name: edit_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.edit_history_id_seq', 9, true);
+
+
+--
+-- TOC entry 4807 (class 0 OID 0)
+-- Dependencies: 290
+-- Name: poi_accessibility_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.poi_accessibility_id_seq', 57, true);
+
+
+--
+-- TOC entry 4808 (class 0 OID 0)
+-- Dependencies: 304
+-- Name: poi_claims_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.poi_claims_id_seq', 1, true);
+
+
+--
+-- TOC entry 4809 (class 0 OID 0)
+-- Dependencies: 297
+-- Name: poi_flags_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.poi_flags_id_seq', 5, true);
+
+
+--
+-- TOC entry 4810 (class 0 OID 0)
+-- Dependencies: 299
+-- Name: poi_photos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.poi_photos_id_seq', 6, true);
+
+
+--
+-- TOC entry 4811 (class 0 OID 0)
+-- Dependencies: 286
+-- Name: pois_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.pois_id_seq', 22, true);
+
+
+--
+-- TOC entry 4812 (class 0 OID 0)
+-- Dependencies: 306
+-- Name: review_reports_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.review_reports_id_seq', 2, true);
+
+
+--
+-- TOC entry 4813 (class 0 OID 0)
+-- Dependencies: 301
+-- Name: user_bookmarks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.user_bookmarks_id_seq', 37, true);
+
+
+--
+-- TOC entry 4814 (class 0 OID 0)
+-- Dependencies: 292
+-- Name: user_reviews_id_seq; Type: SEQUENCE SET; Schema: public; Owner: lequy
+--
+
+SELECT pg_catalog.setval('public.user_reviews_id_seq', 25, true);
+
+
+--
+-- TOC entry 4557 (class 2606 OID 19670)
+-- Name: accessibility_features accessibility_features_name_key; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.accessibility_features
+    ADD CONSTRAINT accessibility_features_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 4559 (class 2606 OID 19668)
+-- Name: accessibility_features accessibility_features_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.accessibility_features
+    ADD CONSTRAINT accessibility_features_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4546 (class 2606 OID 19637)
+-- Name: categories categories_name_key; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 4548 (class 2606 OID 19635)
+-- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4573 (class 2606 OID 19783)
+-- Name: edit_history edit_history_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.edit_history
+    ADD CONSTRAINT edit_history_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4562 (class 2606 OID 19682)
+-- Name: poi_accessibility poi_accessibility_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility
+    ADD CONSTRAINT poi_accessibility_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4564 (class 2606 OID 19684)
+-- Name: poi_accessibility poi_accessibility_poi_id_feature_id_key; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility
+    ADD CONSTRAINT poi_accessibility_poi_id_feature_id_key UNIQUE (poi_id, feature_id);
+
+
+--
+-- TOC entry 4586 (class 2606 OID 36291)
+-- Name: poi_claims poi_claims_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_claims
+    ADD CONSTRAINT poi_claims_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4575 (class 2606 OID 27944)
+-- Name: poi_flags poi_flags_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_flags
+    ADD CONSTRAINT poi_flags_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4577 (class 2606 OID 27967)
+-- Name: poi_photos poi_photos_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_photos
+    ADD CONSTRAINT poi_photos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4555 (class 2606 OID 19651)
+-- Name: pois pois_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.pois
+    ADD CONSTRAINT pois_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4584 (class 2606 OID 36269)
+-- Name: review_reactions review_reactions_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reactions
+    ADD CONSTRAINT review_reactions_pkey PRIMARY KEY (user_id, review_id);
+
+
+--
+-- TOC entry 4588 (class 2606 OID 36318)
+-- Name: review_reports review_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reports
+    ADD CONSTRAINT review_reports_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4580 (class 2606 OID 28037)
+-- Name: user_bookmarks unique_user_poi_collection; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_bookmarks
+    ADD CONSTRAINT unique_user_poi_collection UNIQUE (user_id, poi_id, collection_name);
+
+
+--
+-- TOC entry 4590 (class 2606 OID 36320)
+-- Name: review_reports unique_user_review_report; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reports
+    ADD CONSTRAINT unique_user_review_report UNIQUE (user_id, review_id);
+
+
+--
+-- TOC entry 4582 (class 2606 OID 28035)
+-- Name: user_bookmarks user_bookmarks_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_bookmarks
+    ADD CONSTRAINT user_bookmarks_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4567 (class 2606 OID 19706)
+-- Name: user_reviews user_reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_reviews
+    ADD CONSTRAINT user_reviews_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4569 (class 2606 OID 19756)
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 4571 (class 2606 OID 27996)
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4560 (class 1259 OID 19695)
+-- Name: idx_poi_accessibility_poi; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_poi_accessibility_poi ON public.poi_accessibility USING btree (poi_id);
+
+
+--
+-- TOC entry 4549 (class 1259 OID 36261)
+-- Name: idx_pois_address_trgm; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_pois_address_trgm ON public.pois USING gin (address public.gin_trgm_ops);
+
+
+--
+-- TOC entry 4550 (class 1259 OID 19658)
+-- Name: idx_pois_category; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_pois_category ON public.pois USING btree (category_id);
+
+
+--
+-- TOC entry 4551 (class 1259 OID 19657)
+-- Name: idx_pois_location; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_pois_location ON public.pois USING gist (location);
+
+
+--
+-- TOC entry 4552 (class 1259 OID 36260)
+-- Name: idx_pois_name_trgm; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_pois_name_trgm ON public.pois USING gin (name public.gin_trgm_ops);
+
+
+--
+-- TOC entry 4553 (class 1259 OID 19659)
+-- Name: idx_pois_score; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_pois_score ON public.pois USING btree (overall_score);
+
+
+--
+-- TOC entry 4565 (class 1259 OID 19712)
+-- Name: idx_reviews_poi; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_reviews_poi ON public.user_reviews USING btree (poi_id);
+
+
+--
+-- TOC entry 4578 (class 1259 OID 28048)
+-- Name: idx_user_bookmarks_userid; Type: INDEX; Schema: public; Owner: lequy
+--
+
+CREATE INDEX idx_user_bookmarks_userid ON public.user_bookmarks USING btree (user_id);
+
+
+--
+-- TOC entry 4615 (class 2620 OID 19714)
+-- Name: pois trigger_pois_updated; Type: TRIGGER; Schema: public; Owner: lequy
+--
+
+CREATE TRIGGER trigger_pois_updated BEFORE UPDATE ON public.pois FOR EACH ROW EXECUTE FUNCTION public.update_timestamp();
+
+
+--
+-- TOC entry 4600 (class 2606 OID 19789)
+-- Name: edit_history edit_history_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.edit_history
+    ADD CONSTRAINT edit_history_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4601 (class 2606 OID 28012)
+-- Name: edit_history edit_history_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.edit_history
+    ADD CONSTRAINT edit_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4594 (class 2606 OID 19690)
+-- Name: poi_accessibility poi_accessibility_feature_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility
+    ADD CONSTRAINT poi_accessibility_feature_id_fkey FOREIGN KEY (feature_id) REFERENCES public.accessibility_features(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4595 (class 2606 OID 19685)
+-- Name: poi_accessibility poi_accessibility_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility
+    ADD CONSTRAINT poi_accessibility_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4596 (class 2606 OID 28022)
+-- Name: poi_accessibility poi_accessibility_reported_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility
+    ADD CONSTRAINT poi_accessibility_reported_by_fkey FOREIGN KEY (reported_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4597 (class 2606 OID 36331)
+-- Name: poi_accessibility poi_accessibility_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_accessibility
+    ADD CONSTRAINT poi_accessibility_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4611 (class 2606 OID 36292)
+-- Name: poi_claims poi_claims_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_claims
+    ADD CONSTRAINT poi_claims_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4612 (class 2606 OID 36297)
+-- Name: poi_claims poi_claims_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_claims
+    ADD CONSTRAINT poi_claims_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4602 (class 2606 OID 27947)
+-- Name: poi_flags poi_flags_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_flags
+    ADD CONSTRAINT poi_flags_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4603 (class 2606 OID 28007)
+-- Name: poi_flags poi_flags_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_flags
+    ADD CONSTRAINT poi_flags_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4604 (class 2606 OID 27968)
+-- Name: poi_photos poi_photos_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_photos
+    ADD CONSTRAINT poi_photos_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4605 (class 2606 OID 27981)
+-- Name: poi_photos poi_photos_review_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_photos
+    ADD CONSTRAINT poi_photos_review_id_fkey FOREIGN KEY (review_id) REFERENCES public.user_reviews(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4606 (class 2606 OID 28017)
+-- Name: poi_photos poi_photos_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.poi_photos
+    ADD CONSTRAINT poi_photos_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4591 (class 2606 OID 19652)
+-- Name: pois pois_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.pois
+    ADD CONSTRAINT pois_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4592 (class 2606 OID 36302)
+-- Name: pois pois_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.pois
+    ADD CONSTRAINT pois_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4593 (class 2606 OID 27997)
+-- Name: pois pois_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.pois
+    ADD CONSTRAINT pois_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4609 (class 2606 OID 36275)
+-- Name: review_reactions review_reactions_review_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reactions
+    ADD CONSTRAINT review_reactions_review_id_fkey FOREIGN KEY (review_id) REFERENCES public.user_reviews(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4610 (class 2606 OID 36270)
+-- Name: review_reactions review_reactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reactions
+    ADD CONSTRAINT review_reactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4613 (class 2606 OID 36321)
+-- Name: review_reports review_reports_review_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reports
+    ADD CONSTRAINT review_reports_review_id_fkey FOREIGN KEY (review_id) REFERENCES public.user_reviews(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4614 (class 2606 OID 36326)
+-- Name: review_reports review_reports_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.review_reports
+    ADD CONSTRAINT review_reports_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4607 (class 2606 OID 28043)
+-- Name: user_bookmarks user_bookmarks_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_bookmarks
+    ADD CONSTRAINT user_bookmarks_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4608 (class 2606 OID 28038)
+-- Name: user_bookmarks user_bookmarks_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_bookmarks
+    ADD CONSTRAINT user_bookmarks_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4598 (class 2606 OID 19707)
+-- Name: user_reviews user_reviews_poi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_reviews
+    ADD CONSTRAINT user_reviews_poi_id_fkey FOREIGN KEY (poi_id) REFERENCES public.pois(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4599 (class 2606 OID 28002)
+-- Name: user_reviews user_reviews_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: lequy
+--
+
+ALTER TABLE ONLY public.user_reviews
+    ADD CONSTRAINT user_reviews_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+-- Completed on 2026-04-08 04:07:03
+
+--
+-- PostgreSQL database dump complete
+--
+
