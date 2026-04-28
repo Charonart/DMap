@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const multer = require('multer');
+const config = require('../config/appConfig');
 const cloudinary = require('../utils/cloudinary');
 
 // Set up multer using memory storage
@@ -7,7 +8,7 @@ const storage = multer.memoryStorage();
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: config.uploads.maxPhotoSize },
     fileFilter: function (req, file, cb) {
         const filetypes = /jpeg|jpg|png|webp/;
         const mimetypes = /image\/jpeg|image\/png|image\/webp/;

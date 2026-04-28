@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const config = require('../config/appConfig');
 const bcrypt = require('bcryptjs');
 
 // Fix #15: Role checks removed from controllers — handled by requireAdmin/requireAdminOrMod middleware in routes
@@ -22,7 +23,7 @@ exports.getStats = async (req, res) => {
 };
 
 exports.getUsers = async (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const limit = Math.min(parseInt(req.query.limit) || config.pagination.adminDefaultLimit, config.pagination.adminMaxLimit);
   const offset = parseInt(req.query.offset) || 0;
   try {
     const { rows } = await pool.query(
@@ -121,7 +122,7 @@ exports.reviewPoi = async (req, res) => {
 };
 
 exports.getEditHistory = async (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const limit = Math.min(parseInt(req.query.limit) || config.pagination.adminDefaultLimit, config.pagination.adminMaxLimit);
   const offset = parseInt(req.query.offset) || 0;
   try {
     const { rows } = await pool.query('SELECT * FROM edit_history ORDER BY edited_at DESC LIMIT $1 OFFSET $2', [limit, offset]);

@@ -9,6 +9,7 @@ import { POIPerformanceBreakdown } from './POIPerformanceBreakdown';
 import { POIActionRow } from './POIActionRow';
 import { PhotoGallery } from './PhotoGallery';
 import { ReviewList } from './ReviewList';
+import { AIReviewSummary } from './AIReviewSummary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useMapContext } from '@/components/map/MapContext';
@@ -86,6 +87,7 @@ export function POIDetailSheet() {
                 </TabsContent>
                 
                 <TabsContent value="reviews" className={styles.tabContentReviews}>
+                  <AIReviewSummary poiId={poiData.id} />
                   <ReviewList poiId={poiData.id} />
                 </TabsContent>
               </Tabs>

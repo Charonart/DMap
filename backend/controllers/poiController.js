@@ -1,10 +1,11 @@
 const pool = require("../config/db");
+const config = require("../config/appConfig");
 
 exports.getPois = async (req, res) => {
   try {
     const { category, bbox, min_score, feature } = req.query;
     // Fix #14: Add pagination
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const limit = Math.min(parseInt(req.query.limit) || config.pagination.defaultLimit, config.pagination.maxLimit);
     const offset = parseInt(req.query.offset) || 0;
 
     let query = `
@@ -65,7 +66,7 @@ exports.getPois = async (req, res) => {
 exports.getNearbyPois = async (req, res) => {
   try {
     const { lat, lng, radius = 1000 } = req.query;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const limit = Math.min(parseInt(req.query.limit) || config.pagination.defaultLimit, config.pagination.maxLimit);
 
     if (!lat || !lng) {
       return res
@@ -257,7 +258,7 @@ exports.getPoiById = async (req, res) => {
       FROM user_reviews ur
       LEFT JOIN poi_photos p ON ur.id = p.review_id
       WHERE ur.poi_id = $1
-      ORDER BY ur.created_at DESC LIMIT 20
+      ORDER BY ur.created_at DESC LIMIT ${config.search.defaultReviewLimit}
     `,
       [poiId],
     );

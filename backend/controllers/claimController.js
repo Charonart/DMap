@@ -1,12 +1,13 @@
 const pool = require('../config/db');
 const multer = require('multer');
+const config = require('../config/appConfig');
 const cloudinary = require('../utils/cloudinary');
 
 // Multer memory storage for claim documents
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for documents
+  limits: { fileSize: config.uploads.maxDocumentSize },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp|pdf/;
     const mimetypes = /image\/jpeg|image\/png|image\/webp|application\/pdf/;

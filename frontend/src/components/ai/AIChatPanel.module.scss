@@ -1,0 +1,414 @@
+@use '@/styles/variables' as *;
+
+// ── Chat FAB Button ─────────────────────────
+
+.fab {
+  position: absolute;
+  bottom: $space-6;
+  left: $space-4;
+  z-index: z-index("map-controls");
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: $radius-full;
+  border: none;
+  background-color: $color-primary;
+  color: $color-on-primary;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: $shadow-m3-lg;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    transform: scale(1.06);
+    box-shadow: $shadow-m3-xl;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  @media (min-width: 640px) {
+    bottom: $space-8;
+    left: $space-6;
+  }
+}
+
+.fabPulse {
+  animation: fabPulse 2s ease-in-out infinite;
+}
+
+@keyframes fabPulse {
+  0%, 100% { box-shadow: $shadow-m3-lg; }
+  50% { box-shadow: 0 0 0 8px rgba($color-primary, 0.15), $shadow-m3-lg; }
+}
+
+// ── Chat Panel ──────────────────────────────
+
+.panel {
+  position: absolute;
+  bottom: $space-6;
+  left: $space-4;
+  z-index: z-index("sheet");
+  width: calc(100vw - #{$space-4} * 2);
+  max-width: 25rem; // 400px (increased from 360px for better readability)
+  height: min(34rem, calc(100vh - 6rem)); // slightly taller
+  display: flex;
+  flex-direction: column;
+  background-color: rgba($color-surface-container-lowest, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: $radius-2xl;
+  box-shadow: $shadow-m3-xl;
+  overflow: hidden;
+  transform-origin: bottom left;
+
+  // Slide-up + fade-in animation
+  animation: panelIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+  @media (min-width: 640px) {
+    bottom: $space-8;
+    left: $space-6;
+  }
+
+  // Mobile: wider panel
+  @media (max-width: 480px) {
+    width: calc(100vw - #{$space-3} * 2);
+    left: $space-3;
+    bottom: $space-3;
+    max-width: none;
+    height: min(70vh, calc(100vh - 5rem));
+    border-radius: $radius-xl $radius-xl $radius-lg $radius-lg;
+  }
+}
+
+.panelClosing {
+  animation: panelOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
+// ── Header ──────────────────────────────────
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-3 $space-4;
+  border-bottom: 1px solid rgba($color-outline, 0.1);
+  flex-shrink: 0;
+}
+
+.headerIcon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: $radius-full;
+  background: linear-gradient(135deg, $color-primary, $color-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-on-primary;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: $color-on-surface;
+  line-height: 1.2;
+}
+
+.headerSubtitle {
+  font-size: 0.6875rem;
+  color: $color-on-surface-variant;
+  font-weight: 400;
+}
+
+.headerActions {
+  display: flex;
+  gap: $space-1;
+}
+
+.headerBtn {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: $radius-full;
+  background: transparent;
+  color: $color-on-surface-variant;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: $color-surface-container-high;
+  }
+}
+
+// ── Messages Area ───────────────────────────
+
+.messagesArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: $space-3 $space-4;
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+
+  // Hide scrollbar but keep scrollable
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+// ── Message Bubbles ─────────────────────────
+
+.messageRow {
+  display: flex;
+  max-width: 100%;
+}
+
+.messageRowUser {
+  justify-content: flex-end;
+}
+
+.messageRowAssistant {
+  justify-content: flex-start;
+}
+
+.messageBubble {
+  max-width: 90%;
+  padding: $space-3 $space-4; // Increased padding
+  border-radius: $radius-xl;
+  font-size: 0.875rem;
+  line-height: 1.6; // Slightly more line height
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.messageBubbleUser {
+  background-color: $color-primary;
+  color: $color-on-primary;
+  border-bottom-right-radius: $radius-sm;
+}
+
+.messageBubbleAssistant {
+  background-color: $color-surface-container;
+  color: $color-on-surface;
+  border-bottom-left-radius: $radius-sm;
+}
+
+.messageTime {
+  font-size: 0.625rem;
+  color: $color-on-surface-variant;
+  margin-top: $space-1;
+  opacity: 0.6;
+}
+
+.messageTimeUser {
+  text-align: right;
+}
+
+// ── Typing Indicator ────────────────────────
+
+.typingIndicator {
+  display: flex;
+  gap: 4px;
+  padding: $space-2 $space-3;
+  background-color: $color-surface-container;
+  border-radius: $radius-xl;
+  border-bottom-left-radius: $radius-sm;
+  width: fit-content;
+}
+
+.typingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: $radius-full;
+  background-color: $color-on-surface-variant;
+  opacity: 0.4;
+  animation: typingBounce 1.4s ease-in-out infinite;
+
+  &:nth-child(2) { animation-delay: 0.2s; }
+  &:nth-child(3) { animation-delay: 0.4s; }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+// ── Suggestion Chips ────────────────────────
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  padding: 0 $space-4 $space-2;
+}
+
+.suggestionChip {
+  padding: $space-2 $space-3;
+  border-radius: $radius-xl;
+  border: 1px solid rgba($color-primary, 0.3);
+  background-color: rgba($color-primary-container, 0.5);
+  color: $color-primary;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: normal; // Allow text to wrap
+  text-align: left;
+  line-height: 1.4;
+
+  &:hover {
+    background-color: $color-primary-container;
+    border-color: $color-primary;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+// ── Input Area ──────────────────────────────
+
+.inputArea {
+  display: flex;
+  align-items: flex-end;
+  gap: $space-2;
+  padding: $space-3 $space-4;
+  border-top: 1px solid rgba($color-outline, 0.1);
+  flex-shrink: 0;
+  background-color: rgba($color-surface-container-lowest, 0.5);
+}
+
+.inputWrapper {
+  flex: 1;
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  padding: $space-2 $space-3;
+  border: 1px solid rgba($color-outline, 0.2);
+  border-radius: $radius-xl;
+  background-color: $color-surface-container-low;
+  color: $color-on-surface;
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+  max-height: 5rem;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+
+  &::placeholder {
+    color: $color-outline;
+  }
+
+  &:focus {
+    border-color: $color-primary;
+  }
+}
+
+.sendBtn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: $radius-full;
+  background-color: $color-primary;
+  color: $color-on-primary;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s, transform 0.15s;
+  flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    transform: scale(1.06);
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.95);
+  }
+}
+
+// ── Anonymous Quota Banner ──────────────────
+
+.quotaBanner {
+  padding: $space-2 $space-4;
+  background-color: rgba($color-primary-container, 0.6);
+  font-size: 0.75rem;
+  color: $color-on-primary-container;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.quotaBannerWarning {
+  background-color: rgba($color-error-container, 0.6);
+  color: $color-error;
+}
+
+.loginCTA {
+  background: none;
+  border: none;
+  color: $color-primary;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.75rem;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// ── Context Badge ───────────────────────────
+
+.contextBadge {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  padding: $space-1 $space-3;
+  margin: 0 $space-4;
+  background-color: rgba($color-tertiary, 0.08);
+  border-radius: $radius-full;
+  font-size: 0.6875rem;
+  color: $color-tertiary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

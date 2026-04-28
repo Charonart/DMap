@@ -12,6 +12,7 @@ import { POIDetailSheet } from "@/components/poi/POIDetailSheet";
 import { CreatePOISheet } from "@/components/poi/CreatePOISheet";
 import { ProfileOverlay } from "@/components/profile/ProfileOverlay";
 import { MapContextMenu } from "@/components/map/MapContextMenu";
+import { AIChatWidget } from "@/components/ai/AIChatPanel";
 import styles from "./page.module.scss";
 
 export default function MapPage() {
@@ -55,6 +56,9 @@ export default function MapPage() {
         {/* Layer 5: Detail Overlays (Popups when clicking markers) */}
         <POIDetailSheet />
         <CreatePOISheet />
+
+        {/* Layer 5.5: AI Chat Assistant */}
+        <AIChatWidget />
 
         {/* Layer 6: Global Profile Overlay (Covers the whole map when open) */}
         <ProfileOverlay />

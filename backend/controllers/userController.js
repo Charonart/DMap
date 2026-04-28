@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
+const config = require('../config/appConfig');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -51,7 +52,7 @@ exports.updateProfile = async (req, res) => {
 
 exports.getContributions = async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const limit = Math.min(parseInt(req.query.limit) || config.pagination.adminDefaultLimit, config.pagination.adminMaxLimit);
     const offset = parseInt(req.query.offset) || 0;
     
     const pois = await pool.query(

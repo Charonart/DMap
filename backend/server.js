@@ -26,6 +26,7 @@ const searchRoutes = require("./routes/searchRoutes");
 const reactionRoutes = require("./routes/reactionRoutes");
 const claimRoutes = require("./routes/claimRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 const poiController = require("./controllers/poiController");
 
 const app = express();
@@ -104,6 +105,9 @@ app.use("/api/reviews", reportRoutes);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
+
+// AI Features: Chat, Semantic Search, Review Summary
+app.use('/api/ai', aiRoutes);
 
 // ── Start Server ───────────────────────────
 const server = app.listen(PORT, "0.0.0.0", () => {

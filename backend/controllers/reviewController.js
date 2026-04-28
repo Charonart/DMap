@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const multer = require('multer');
+const config = require('../config/appConfig');
 const cloudinary = require('../utils/cloudinary');
 
 // Fix #8: Switch to Cloudinary upload, matching photoController.js
@@ -7,7 +8,7 @@ const storage = multer.memoryStorage();
 
 exports.uploadReviewImage = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: config.uploads.maxPhotoSize },
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|webp/;
         const mimetypes = /image\/jpeg|image\/png|image\/webp/;

@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const config = require('../config/appConfig');
 
 // Module 4: Fast trigram autocomplete search
 exports.autocomplete = async (req, res) => {
@@ -11,7 +12,7 @@ exports.autocomplete = async (req, res) => {
 
     const searchTerm = q.trim();
 
-    // Use pg_trgm similarity for fuzzy matching, limited to 5 results
+    // Use pg_trgm similarity for fuzzy matching, limited results
     const { rows } = await pool.query(`
       SELECT 
         p.id, p.name, p.name_vi, p.address,
@@ -21,7 +22,7 @@ exports.autocomplete = async (req, res) => {
           similarity(p.name, $1),
           similarity(COALESCE(p.name_vi, ''), $1),
           similarity(COALESCE(p.address, ''), $1)
-        ) AS relevance
+        ) AS similarity
       FROM pois p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.deleted_at IS NULL 
@@ -34,8 +35,8 @@ exports.autocomplete = async (req, res) => {
           OR similarity(p.name, $1) > 0.1
           OR similarity(COALESCE(p.name_vi, ''), $1) > 0.1
         )
-      ORDER BY relevance DESC, p.overall_score DESC
-      LIMIT 5
+      ORDER BY similarity DESC
+      LIMIT ${config.search.maxFuzzyResults}
     `, [searchTerm, `%${searchTerm}%`]);
 
     res.json({ status: 'success', data: rows });

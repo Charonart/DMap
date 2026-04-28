@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const config = require('../config/appConfig');
 const { JWT_SECRET, REFRESH_SECRET } = require('../middleware/auth');
 
 const JWT_EXPIRES_IN = '1h'; // Short-lived Access Token
@@ -79,7 +80,7 @@ exports.refreshToken = async (req, res) => {
     const user = rows[0];
     const newAccessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     
-    res.cookie('token', newAccessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 60 * 60 * 1000 });
+    res.cookie('token', newAccessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: config.auth.accessTokenCookieMaxAge });
     res.json({ status: 'success', message: 'Token refreshed' });
   } catch (err) {
     res.status(401).json({ status: 'error', message: 'Invalid refresh token' });
